@@ -277,10 +277,27 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         cc_playerString = player:GetClassAsString(0)
         PrintInfo("1) The player with GUID "..cc_playerGUID.." has succesfully initiated the .carboncopy command. Target character: "..cc_newCharacter);
         chatHandler:SendSysMessage("Copy started. You have been charged "..requiredTickets.." ticket(s) for this action. There are "..availableTickets - requiredTickets.." ticket()s left.")
-        chatHandler:SendSysMessage("STAY logged in for one minute!")
-        chatHandler:SendSysMessage("RIMANENTE connessi per un minuto!")
-        chatHandler:SendSysMessage("MANTENTE conectado por un minuto!")
-        chatHandler:SendSysMessage("BLEIB eingeloggt für eine Minute!")
+        local stayMsgEnglish = "STAY logged in for one minute!"
+        local stayMsgItalian = "RIMANI connesso per un minuto!"
+        local locale = player:GetDbcLocale()
+        local stayMsgByLocale = {
+            [1] = "1분 동안 접속 상태를 유지하세요!",    -- koKR
+            [2] = "RESTEZ connecte pendant une minute!", -- frFR
+            [3] = "BLEIB eingeloggt für eine Minute!", -- deDE
+            [4] = "请保持在线一分钟！",                    -- zhCN
+            [5] = "請保持在線一分鐘！",                    -- zhTW
+            [6] = "MANTENTE conectado por un minuto!", -- esES
+            [7] = "MANTENTE conectado por un minuto!", -- esMX
+            [8] = "ОСТАВАЙТЕСЬ В ИГРЕ ОДНУ МИНУТУ!"    -- ruRU
+        }
+        local localizedStayMsg = stayMsgByLocale[locale]
+
+        -- Display English and Italian (as Italian doesn't have a locale in Wrath)
+        chatHandler:SendSysMessage(stayMsgEnglish)
+        chatHandler:SendSysMessage(stayMsgItalian)
+        if localizedStayMsg ~= nil then
+            chatHandler:SendSysMessage(localizedStayMsg)
+        end
 
         cc_eventId = CreateLuaEvent(cc_resumeSubRoutine, 1000, 10)
 
