@@ -135,7 +135,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         cc_playerGUID = tostring(player:GetGUID())
         cc_playerGUID = tonumber(cc_playerGUID)
         local targetName = cc_normalizeCharacterName(commandArray[2])
-    
+
         --check for target character to be on same account
         local Data_SQL = CharDBQuery('SELECT `account` FROM `characters` WHERE `name` = "'..targetName..'" LIMIT 1;');
         if Data_SQL == nil then
@@ -231,7 +231,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         if Data_SQL ~= nil then
             cc_cinematic = Data_SQL:GetUInt16(0)
             if cc_cinematic == 1 then
-                chatHandler:SendSysMessage("The requested character has been logged in already. Aborting.")
+                chatHandler:SendSysMessage("The requested character has been logged in already (or has already been Carbon Copied). Aborting.")
                 cc_cinematic = nil
                 cc_resetVariables()
                 return false
@@ -246,7 +246,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         if Data_SQL ~= nil then
             cc_online = Data_SQL:GetUInt16(0)
             if cc_online == 1 then
-                chatHandler:SendSysMessage("The requested character has been logged in already. Aborting.")
+                chatHandler:SendSysMessage("The requested character has been logged in already (or has already been Carbon Copied). Aborting.")
                 cc_online = nil
                 cc_resetVariables()
                 return false
@@ -269,7 +269,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         Ban(1, targetName, 15, "CarbonCopy", "CarbonCopy" )
         cc_scriptIsBusy = 1
         cc_newCharacter = newCharacter
-        
+
         -- save the source character to db to prevent recent changes from being not applied
         player:SaveToDB()
 
@@ -532,6 +532,8 @@ function cc_CopyCharacter(event, player, command, chatHandler)
 
         return false
         end)
+
+        return false
 
     elseif commandArray[1] == "addcctickets" then
         -- make sure the player is properly ranked
