@@ -134,7 +134,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
 
         cc_playerGUID = tostring(player:GetGUID())
         cc_playerGUID = tonumber(cc_playerGUID)
-        local targetName = commandArray[2]:gsub("^%l", string.upper)
+        local targetName = cc_normalizeCharacterName(commandArray[2])
     
         --check for target character to be on same account
         local Data_SQL = CharDBQuery('SELECT `account` FROM `characters` WHERE `name` = "'..targetName..'" LIMIT 1;');
@@ -560,7 +560,8 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 return false
             end
 
-            Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..tostring(commandArray[2]).."' LIMIT 1;");
+            local normalisedCharacterName = cc_normalizeCharacterName(commandArray[2])
+            Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..normalisedCharacterName.."' LIMIT 1;");
             if Data_SQL ~= nil then
                 accountId = Data_SQL:GetUInt32(0)
             else
@@ -589,7 +590,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             Data_SQL = CharDBQuery('DELETE FROM `'..Config.customDbName..'`.`carboncopy` WHERE `account_id` = '..accountId..';');
             Data_SQL = CharDBQuery('INSERT INTO `'..Config.customDbName..'`.`carboncopy` VALUES ('..accountId..', '..commandArray[3] + oldTickets..', 0);');
             Data_SQL = nil
-            chatHandler:SendSysMessage("GM "..player:GetName().. " has sucessfully used the .addcctickets command, adding "..commandArray[3].." tickets to the account "..accountId.." which belongs to player "..commandArray[2]..".")
+            chatHandler:SendSysMessage("GM "..player:GetName().. " has sucessfully used the .addcctickets command, adding "..commandArray[3].." tickets to the account "..accountId.." which belongs to player "..normalisedCharacterName..".")
             cc_resetVariables()
             return false
         else
@@ -611,7 +612,8 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 return false
             end
 
-            Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..tostring(commandArray[2]).."' LIMIT 1;");
+            local normalisedCharacterName = cc_normalizeCharacterName(commandArray[2])
+            Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..normalisedCharacterName.."' LIMIT 1;");
             if Data_SQL ~= nil then
                 accountId = Data_SQL:GetUInt32(0)
             else
@@ -640,7 +642,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             Data_SQL = CharDBQuery('DELETE FROM `'..Config.customDbName..'`.`carboncopy` WHERE `account_id` = '..accountId..';');
             Data_SQL = CharDBQuery('INSERT INTO `'..Config.customDbName..'`.`carboncopy` VALUES ('..accountId..', '..commandArray[3] + oldTickets..', 0);');
             Data_SQL = nil
-            chatHandler:SendSysMessage("The console has sucessfully used the .addcctickets command, adding "..commandArray[3].." tickets to the account "..accountId.." which belongs to player "..commandArray[2]..".")
+            chatHandler:SendSysMessage("The console has sucessfully used the .addcctickets command, adding "..commandArray[3].." tickets to the account "..accountId.." which belongs to player "..normalisedCharacterName..".")
             cc_resetVariables()
             return false
         end
@@ -747,6 +749,16 @@ function cc_splitString(inputstr, seperator)
         table.insert(t, str)
     end
     return t
+end
+
+function cc_normalizeCharacterName(name)
+    if name == nil then
+        return nil
+    end
+
+    local normalised = string.lower(name)
+    normalised = normalised:gsub("^%l", string.upper)
+    return normalised
 end
 
 function cc_has_value (tab, val)
