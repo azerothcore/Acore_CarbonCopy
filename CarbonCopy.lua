@@ -45,6 +45,9 @@ ticket_Cost[69] = 12
 ticket_Cost[79] = 18
 ticket_Cost[80] = 25	--it costs 25 tickets to copy a character at level 80
 
+-- The ItemID "38" (Recruit's Shirt) will be sent on the mail if slot is empty or doesn't exist.
+-- Applies for Shaman Totems "totemItem[X]" and for nill slots in "item_id[i]".
+
 -- The maps below specify legal locations to use the .carboncopy command.
 -- This is used to prevent dungeon specific gear to be copied e.g. the legendaries from the Kael'thas encounter.
 -- Eastern kingdoms
@@ -103,7 +106,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             return false
         end
 
-        -- provide syntax help 
+        -- provide syntax help
         if commandArray[2] == "help" then
             chatHandler:SendSysMessage("Syntax: .carboncopy $NewCharacterName")
             cc_resetVariables()
@@ -376,6 +379,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             totemItem[2] = 38
             totemItem[3] = 38
             totemItem[4] = 38
+            totemItem[5] = 38
             local totemsDone = 0
             local Data_SQL
             Data_SQL = CharDBQuery('SELECT itemEntry FROM item_instance WHERE owner_guid = '..cc_playerGUID..' AND itemEntry = 5178 LIMIT 1;')
@@ -413,7 +417,16 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             end
             Data_SQL = nil
 
-            SendMail("Copied items", "Hello "..targetName..Config.mailText, cc_newCharacter, 0, 61, 0, 0, 0, totemItem[1], 1, totemItem[2], 1, totemItem[3], 1, totemItem[4], 1)
+            local Data_SQL
+            Data_SQL = CharDBQuery('SELECT itemEntry FROM item_instance WHERE owner_guid = '..cc_playerGUID..' AND itemEntry = 46978 LIMIT 1;')
+            if Data_SQL ~= nil then
+                if Data_SQL:GetUInt16(0) == 46978 then
+                    totemItem[5] = 46978
+                end
+            end
+            Data_SQL = nil
+
+            SendMail("Copied items", "Hello "..targetName..Config.mailText, cc_newCharacter, 0, 61, 0, 0, 0, totemItem[1], 1, totemItem[2], 1, totemItem[3], 1, totemItem[4], 1, totemItem[5], 1)
 
             Data_SQL = nil
             totemsDone = nil
