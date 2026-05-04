@@ -45,6 +45,9 @@ ticket_Cost[69] = 12
 ticket_Cost[79] = 18
 ticket_Cost[80] = 25	--it costs 25 tickets to copy a character at level 80
 
+-- The ItemID "38" (Recruit's Shirt) will be sent on the mail if slot is empty or doesn't exist.
+-- Applies for Shaman Totems "totemItem[X]" and for nill slots in "item_id[i]".
+
 -- The maps below specify legal locations to use the .carboncopy command.
 -- This is used to prevent dungeon specific gear to be copied e.g. the legendaries from the Kael'thas encounter.
 -- Eastern kingdoms
@@ -103,7 +106,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             return false
         end
 
-        -- provide syntax help 
+        -- provide syntax help
         if commandArray[2] == "help" then
             chatHandler:SendSysMessage("Syntax: .carboncopy $NewCharacterName")
             cc_resetVariables()
@@ -134,8 +137,8 @@ function cc_CopyCharacter(event, player, command, chatHandler)
 
         cc_playerGUID = tostring(player:GetGUID())
         cc_playerGUID = tonumber(cc_playerGUID)
-        local targetName = commandArray[2]:gsub("^%l", string.upper)
-    
+        local targetName = cc_normalizeCharacterName(commandArray[2])
+
         --check for target character to be on same account
         local Data_SQL = CharDBQuery('SELECT `account` FROM `characters` WHERE `name` = "'..targetName..'" LIMIT 1;');
         if Data_SQL == nil then
@@ -231,7 +234,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         if Data_SQL ~= nil then
             cc_cinematic = Data_SQL:GetUInt16(0)
             if cc_cinematic == 1 then
-                chatHandler:SendSysMessage("The requested character has been logged in already. Aborting.")
+                chatHandler:SendSysMessage("The requested character has been logged in already (or has already been Carbon Copied). Aborting.")
                 cc_cinematic = nil
                 cc_resetVariables()
                 return false
@@ -246,7 +249,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         if Data_SQL ~= nil then
             cc_online = Data_SQL:GetUInt16(0)
             if cc_online == 1 then
-                chatHandler:SendSysMessage("The requested character has been logged in already. Aborting.")
+                chatHandler:SendSysMessage("The requested character has been logged in already (or has already been Carbon Copied). Aborting.")
                 cc_online = nil
                 cc_resetVariables()
                 return false
@@ -269,7 +272,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         Ban(1, targetName, 15, "CarbonCopy", "CarbonCopy" )
         cc_scriptIsBusy = 1
         cc_newCharacter = newCharacter
-        
+
         -- save the source character to db to prevent recent changes from being not applied
         player:SaveToDB()
 
@@ -277,10 +280,27 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         cc_playerString = player:GetClassAsString(0)
         PrintInfo("1) The player with GUID "..cc_playerGUID.." has succesfully initiated the .carboncopy command. Target character: "..cc_newCharacter);
         chatHandler:SendSysMessage("Copy started. You have been charged "..requiredTickets.." ticket(s) for this action. There are "..availableTickets - requiredTickets.." ticket()s left.")
-        chatHandler:SendSysMessage("STAY logged in for one minute!")
-        chatHandler:SendSysMessage("RIMANENTE connessi per un minuto!")
-        chatHandler:SendSysMessage("MANTENTE conectado por un minuto!")
-        chatHandler:SendSysMessage("BLEIB eingeloggt für eine Minute!")
+        local stayMsgEnglish = "STAY logged in for one minute!"
+        local stayMsgItalian = "RIMANI connesso per un minuto!"
+        local locale = player:GetDbcLocale()
+        local stayMsgByLocale = {
+            [1] = "1분 동안 접속 상태를 유지하세요!",    -- koKR
+            [2] = "RESTEZ connecte pendant une minute!", -- frFR
+            [3] = "BLEIB eingeloggt für eine Minute!", -- deDE
+            [4] = "请保持在线一分钟！",                    -- zhCN
+            [5] = "請保持在線一分鐘！",                    -- zhTW
+            [6] = "MANTENTE conectado por un minuto!", -- esES
+            [7] = "MANTENTE conectado por un minuto!", -- esMX
+            [8] = "ОСТАВАЙТЕСЬ В ИГРЕ ОДНУ МИНУТУ!"    -- ruRU
+        }
+        local localizedStayMsg = stayMsgByLocale[locale]
+
+        -- Display English and Italian (as Italian doesn't have a locale in Wrath)
+        chatHandler:SendSysMessage(stayMsgEnglish)
+        chatHandler:SendSysMessage(stayMsgItalian)
+        if localizedStayMsg ~= nil then
+            chatHandler:SendSysMessage(localizedStayMsg)
+        end
 
         cc_eventId = CreateLuaEvent(cc_resumeSubRoutine, 1000, 10)
 
@@ -359,6 +379,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             totemItem[2] = 38
             totemItem[3] = 38
             totemItem[4] = 38
+            totemItem[5] = 38
             local totemsDone = 0
             local Data_SQL
             Data_SQL = CharDBQuery('SELECT itemEntry FROM item_instance WHERE owner_guid = '..cc_playerGUID..' AND itemEntry = 5178 LIMIT 1;')
@@ -396,7 +417,16 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             end
             Data_SQL = nil
 
-            SendMail("Copied items", "Hello "..targetName..Config.mailText, cc_newCharacter, 0, 61, 0, 0, 0, totemItem[1], 1, totemItem[2], 1, totemItem[3], 1, totemItem[4], 1)
+            local Data_SQL
+            Data_SQL = CharDBQuery('SELECT itemEntry FROM item_instance WHERE owner_guid = '..cc_playerGUID..' AND itemEntry = 46978 LIMIT 1;')
+            if Data_SQL ~= nil then
+                if Data_SQL:GetUInt16(0) == 46978 then
+                    totemItem[5] = 46978
+                end
+            end
+            Data_SQL = nil
+
+            SendMail("Copied items", "Hello "..targetName..Config.mailText, cc_newCharacter, 0, 61, 0, 0, 0, totemItem[1], 1, totemItem[2], 1, totemItem[3], 1, totemItem[4], 1, totemItem[5], 1)
 
             Data_SQL = nil
             totemsDone = nil
@@ -516,6 +546,8 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         return false
         end)
 
+        return false
+
     elseif commandArray[1] == "addcctickets" then
         -- make sure the player is properly ranked
         local accountId
@@ -543,7 +575,8 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 return false
             end
 
-            Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..tostring(commandArray[2]).."' LIMIT 1;");
+            local normalisedCharacterName = cc_normalizeCharacterName(commandArray[2])
+            Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..normalisedCharacterName.."' LIMIT 1;");
             if Data_SQL ~= nil then
                 accountId = Data_SQL:GetUInt32(0)
             else
@@ -572,7 +605,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             Data_SQL = CharDBQuery('DELETE FROM `'..Config.customDbName..'`.`carboncopy` WHERE `account_id` = '..accountId..';');
             Data_SQL = CharDBQuery('INSERT INTO `'..Config.customDbName..'`.`carboncopy` VALUES ('..accountId..', '..commandArray[3] + oldTickets..', 0);');
             Data_SQL = nil
-            chatHandler:SendSysMessage("GM "..player:GetName().. " has sucessfully used the .addcctickets command, adding "..commandArray[3].." tickets to the account "..accountId.." which belongs to player "..commandArray[2]..".")
+            chatHandler:SendSysMessage("GM "..player:GetName().. " has sucessfully used the .addcctickets command, adding "..commandArray[3].." tickets to the account "..accountId.." which belongs to player "..normalisedCharacterName..".")
             cc_resetVariables()
             return false
         else
@@ -594,7 +627,8 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 return false
             end
 
-            Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..tostring(commandArray[2]).."' LIMIT 1;");
+            local normalisedCharacterName = cc_normalizeCharacterName(commandArray[2])
+            Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..normalisedCharacterName.."' LIMIT 1;");
             if Data_SQL ~= nil then
                 accountId = Data_SQL:GetUInt32(0)
             else
@@ -623,7 +657,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             Data_SQL = CharDBQuery('DELETE FROM `'..Config.customDbName..'`.`carboncopy` WHERE `account_id` = '..accountId..';');
             Data_SQL = CharDBQuery('INSERT INTO `'..Config.customDbName..'`.`carboncopy` VALUES ('..accountId..', '..commandArray[3] + oldTickets..', 0);');
             Data_SQL = nil
-            chatHandler:SendSysMessage("The console has sucessfully used the .addcctickets command, adding "..commandArray[3].." tickets to the account "..accountId.." which belongs to player "..commandArray[2]..".")
+            chatHandler:SendSysMessage("The console has sucessfully used the .addcctickets command, adding "..commandArray[3].." tickets to the account "..accountId.." which belongs to player "..normalisedCharacterName..".")
             cc_resetVariables()
             return false
         end
@@ -730,6 +764,16 @@ function cc_splitString(inputstr, seperator)
         table.insert(t, str)
     end
     return t
+end
+
+function cc_normalizeCharacterName(name)
+    if name == nil then
+        return nil
+    end
+
+    local normalised = string.lower(name)
+    normalised = normalised:gsub("^%l", string.upper)
+    return normalised
 end
 
 function cc_has_value (tab, val)
