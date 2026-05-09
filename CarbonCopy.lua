@@ -9,7 +9,7 @@
 
 ------------------------------------------------------------------------------------------------
 -- ADMIN GUIDE:  -  compile the core with ElunaLua module
---               -  adjust config in this file
+--               -  adjust config in Acore_CarbonCopy/CarbonCopy_Config.lua
 --               -  add this script to ../lua_scripts/
 --               -  grant account related tickets in the `carboncopy` table
 -- PLAYER USAGE: 1) create a new character with same class/race as the one to copy in the same account. Do NOT log it in
@@ -17,47 +17,10 @@
 --               3) .carboncopy newToonsName
 ------------------------------------------------------------------------------------------------
 
-local Config = {};
-local cc_maps = {};
-local ticket_Cost = {};
-
--- Name of Eluna dB scheme
-Config.customDbName = 'ac_eluna';
--- Min GM Level to use the .carboncopy command. Set to 0 for all players.
-Config.minGMRankForCopy = 0;
--- Min GM Level to add tickets to an account.
-Config.minGMRankForTickets = 2;
--- The amount of free tickets to grant when .carboncopy is executed for the first time on that account
-Config.freeTickets = 1;
--- This text is added to the mail which the new character receives alongside their copied items
-Config.mailText = ",\n \n here you are your gear. Have fun with the new twink!\n \n- Sincerely,\n the team of ChromieCraft!";
--- Maximum level to allow copying a character.
-Config.maxLevel = 49;
--- Whether the ticket amount withdrawn for a copy is always 1 (set it to "single") or depends on the level (set this to "level")
-Config.ticketCost = "level";
--- Here you can adjust the cost in tickets if Config.ticketCost is set to "level"
-ticket_Cost[19] = 1		--it costs 1 ticket to copy a character up to level 19
-ticket_Cost[29] = 2
-ticket_Cost[39] = 3
-ticket_Cost[49] = 5
-ticket_Cost[59] = 8
-ticket_Cost[69] = 12
-ticket_Cost[79] = 18
-ticket_Cost[80] = 25	--it costs 25 tickets to copy a character at level 80
-
--- The ItemID "38" (Recruit's Shirt) will be sent on the mail if slot is empty or doesn't exist.
--- Applies for Shaman Totems "totemItem[X]" and for nill slots in "item_id[i]".
-
--- The maps below specify legal locations to use the .carboncopy command.
--- This is used to prevent dungeon specific gear to be copied e.g. the legendaries from the Kael'thas encounter.
--- Eastern kingdoms
-table.insert(cc_maps, 0)
--- Kalimdor
-table.insert(cc_maps, 1)
--- Outland
-table.insert(cc_maps, 530)
--- Northrend
-table.insert(cc_maps, 571)
+local CarbonCopyConfig = require("CarbonCopy_Config")
+local Config = CarbonCopyConfig.Config
+local cc_maps = CarbonCopyConfig.cc_maps
+local ticket_Cost = CarbonCopyConfig.ticket_Cost
 
 
 ------------------------------------------
