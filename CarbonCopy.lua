@@ -57,6 +57,40 @@ function cc_CopyCharacter(event, player, command, chatHandler)
     end
 
     if commandArray[1] == "carboncopy" then
+        local ccSubCommandConsole = nil
+        if commandArray[2] ~= nil then
+            ccSubCommandConsole = string.lower(commandArray[2])
+        end
+
+        if player == nil and ccSubCommandConsole == "tickets" then
+            if commandArray[3] == nil then
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets $CharacterName")
+                cc_resetVariables()
+                return false
+            end
+
+            local lookupCharacterName = cc_normalizeCharacterName(commandArray[3])
+            local Data_SQL = CharDBQuery('SELECT `account` FROM `characters` WHERE `name` = "'..lookupCharacterName..'" LIMIT 1;')
+            if Data_SQL == nil then
+                chatHandler:SendSysMessage("Character name not found. Check spelling.")
+                cc_resetVariables()
+                return false
+            end
+
+            local lookupAccountId = Data_SQL:GetUInt32(0)
+            Data_SQL = CharDBQuery('SELECT `tickets` FROM `'..Config.customDbName..'`.`carboncopy` WHERE `account_id` = '..lookupAccountId..' LIMIT 1;')
+            local lookupTickets
+            if Data_SQL ~= nil then
+                lookupTickets = Data_SQL:GetUInt32(0)
+            else
+                lookupTickets = Config.freeTickets
+            end
+
+            chatHandler:SendSysMessage("CarbonCopy tickets for "..lookupCharacterName.." (account "..lookupAccountId.."): "..lookupTickets)
+            cc_resetVariables()
+            return false
+        end
+
         if player == nil then
             chatHandler:SendSysMessage("This command can not be run from the console, but only from the character to copy.")
             chatHandler:SendSysMessage("Expected syntax: .addcctickets $CharacterName $Amount")
@@ -91,6 +125,37 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             cc_resetVariables()
             return false
         end
+
+        local ccSubCommand = string.lower(commandArray[2])
+        if ccSubCommand == "tickets" then
+            if commandArray[3] == nil then
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets $CharacterName")
+                cc_resetVariables()
+                return false
+            end
+
+            local lookupCharacterName = cc_normalizeCharacterName(commandArray[3])
+            local Data_SQL = CharDBQuery('SELECT `account` FROM `characters` WHERE `name` = "'..lookupCharacterName..'" LIMIT 1;')
+            if Data_SQL == nil then
+                chatHandler:SendSysMessage("Character name not found. Check spelling.")
+                cc_resetVariables()
+                return false
+            end
+
+            local lookupAccountId = Data_SQL:GetUInt32(0)
+            Data_SQL = CharDBQuery('SELECT `tickets` FROM `'..Config.customDbName..'`.`carboncopy` WHERE `account_id` = '..lookupAccountId..' LIMIT 1;')
+            local lookupTickets
+            if Data_SQL ~= nil then
+                lookupTickets = Data_SQL:GetUInt32(0)
+            else
+                lookupTickets = Config.freeTickets
+            end
+
+            chatHandler:SendSysMessage("CarbonCopy tickets for "..lookupCharacterName.." (account "..lookupAccountId.."): "..lookupTickets)
+            cc_resetVariables()
+            return false
+        end
+
         -- check maxLevel
         if player:GetLevel() > Config.maxLevel then
             chatHandler:SendSysMessage("The character you want to copy from is too high level. Max level is "..Config.maxLevel..". Aborting.")
