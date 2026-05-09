@@ -9,22 +9,22 @@ Config.minGMRankForCopy = 0
 -- Min GM Level to add tickets to an account.
 Config.minGMRankForTickets = 2
 -- The amount of free tickets to grant when .carboncopy is executed for the first time on that account
-Config.freeTickets = 1
+Config.freeTickets = 4
 -- This text is added to the mail which the new character receives alongside their copied items
 Config.mailText = ",\n \n here you are your gear. Have fun with the new twink!\n \n- Sincerely,\n the team of ChromieCraft!"
 -- Maximum level to allow copying a character.
-Config.maxLevel = 70
+Config.maxLevel = 79
 -- Whether the ticket amount withdrawn for a copy is always 1 (set it to "single") or depends on the level (set this to "level")
 Config.ticketCost = "level"
 -- Here you can adjust the cost in tickets if Config.ticketCost is set to "level"
-ticket_Cost[19] = 1      --it costs 1 ticket to copy a character up to level 19
-ticket_Cost[29] = 2
-ticket_Cost[39] = 3
-ticket_Cost[49] = 5
-ticket_Cost[59] = 8
-ticket_Cost[69] = 12
-ticket_Cost[79] = 18
-ticket_Cost[80] = 25     --it costs 25 tickets to copy a character at level 80
+ticket_Cost[19] = 1
+ticket_Cost[29] = 1
+ticket_Cost[39] = 1
+ticket_Cost[49] = 1      -- it costs 1 ticket to copy a character up to level 49
+ticket_Cost[59] = 2
+ticket_Cost[69] = 2      -- it costs 2 tickets to copy a character up to level 69
+ticket_Cost[79] = 3      -- it costs 3 tickets to copy a character up to level 79
+ticket_Cost[80] = 25     -- it costs 25 tickets to copy a character at level 80
 
 -- The ItemID "38" (Recruit's Shirt) will be sent on the mail if slot is empty or doesn't exist.
 -- Applies for Shaman Totems "totemItem[X]" and for nill slots in "item_id[i]".
