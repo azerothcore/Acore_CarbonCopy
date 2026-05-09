@@ -982,6 +982,39 @@ function cc_fixItems()
         Data_SQL = CharDBQuery(QueryString);
     end
 
+    -- Copy equipment sets with remapped item GUIDs
+    if Config.copyEquipmentSets then
+        local guidMap = {}
+        for n,_ in ipairs(cc_oldItemGuids) do
+            if cc_oldItemGuids[n] ~= nil and cc_newItemGuids[n] ~= nil then
+                guidMap[cc_oldItemGuids[n]] = cc_newItemGuids[n]
+            end
+        end
+
+        CharDBQuery('DELETE FROM `character_equipmentsets` WHERE `guid` = '..cc_newCharacter..';')
+
+        local sets_SQL = CharDBQuery('SELECT `setindex`, `name`, `iconname`, `ignore_mask`, `item0`, `item1`, `item2`, `item3`, `item4`, `item5`, `item6`, `item7`, `item8`, `item9`, `item10`, `item11`, `item12`, `item13`, `item14`, `item15`, `item16`, `item17`, `item18` FROM `character_equipmentsets` WHERE `guid` = '..cc_playerGUID..';')
+        if sets_SQL ~= nil then
+            repeat
+                local setindex    = sets_SQL:GetUInt8(0)
+                local name        = sets_SQL:GetString(1):gsub("'", "''")
+                local iconname    = sets_SQL:GetString(2):gsub("'", "''")
+                local ignore_mask = sets_SQL:GetUInt32(3)
+                local items = {}
+                for i = 0, 18 do
+                    local oldGuid = sets_SQL:GetUInt32(4 + i)
+                    items[i] = guidMap[oldGuid] or 0
+                end
+                CharDBQuery('INSERT INTO `character_equipmentsets` (`guid`, `setindex`, `name`, `iconname`, `ignore_mask`, `item0`, `item1`, `item2`, `item3`, `item4`, `item5`, `item6`, `item7`, `item8`, `item9`, `item10`, `item11`, `item12`, `item13`, `item14`, `item15`, `item16`, `item17`, `item18`) VALUES ('
+                    ..cc_newCharacter..', '..setindex..', \''..name..'\',' ..' \''..iconname..'\', '..ignore_mask..', '
+                    ..items[0]..', '..items[1]..', '..items[2]..', '..items[3]..', '..items[4]..', '
+                    ..items[5]..', '..items[6]..', '..items[7]..', '..items[8]..', '..items[9]..', '
+                    ..items[10]..', '..items[11]..', '..items[12]..', '..items[13]..', '..items[14]..', '
+                    ..items[15]..', '..items[16]..', '..items[17]..', '..items[18]..');')
+            until not sets_SQL:NextRow()
+        end
+    end
+
     GetPlayerByGUID(cc_playerGUID):SendBroadcastMessage("Character copy done. You can log out now.")
     PrintInfo("2) Item enchants/gems copied for new character with GUID "..cc_newCharacter);
     cc_newCharacter = 0
