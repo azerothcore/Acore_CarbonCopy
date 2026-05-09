@@ -157,7 +157,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
 
         if player == nil then
             chatHandler:SendSysMessage("This command can not be run from the console, but only from the character to copy.")
-            chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount")
+            chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount") -- Kept for Legacy / Compatibility
             return false
         end
         -- make sure the player is properly ranked
@@ -708,7 +708,6 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         return false
 
     elseif commandArray[1] == "addcctickets" then
-        -- Kept for Legacy / Compotability
         -- make sure the player is properly ranked
         local accountId
         local oldTickets
@@ -719,12 +718,12 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 return false
             end
             if commandArray[2] == "help" then
-                chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount")
+                chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount") -- Kept for Legacy / Compatibility
                 cc_resetVariables()
                 return false
             end
             if commandArray[2] == nil or commandArray[3] == nil then
-                chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount")
+                chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount") -- Kept for Legacy / Compatibility
                 cc_resetVariables()
                 return false
             end
@@ -771,12 +770,12 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         else
             --player is nil, must be the console. no need to check gm rank and print to console only. not chat
             if commandArray[2] == "help" then
-                chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount")
+                chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount") -- Kept for Legacy / Compatibility
                 cc_resetVariables()
                 return false
             end
             if commandArray[2] == nil or commandArray[3] == nil then
-                chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount")
+                chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount") -- Kept for Legacy / Compatibility
                 cc_resetVariables()
                 return false
             end
