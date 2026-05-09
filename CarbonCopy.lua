@@ -44,6 +44,12 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         if commandArray[3] ~= nil then
             commandArray[3] = commandArray[3]:gsub("[';\\, ]", "")
         end
+        if commandArray[4] ~= nil then
+            commandArray[4] = commandArray[4]:gsub("[';\\, ]", "")
+        end
+        if commandArray[5] ~= nil then
+            commandArray[5] = commandArray[5]:gsub("[';\\, ]", "")
+        end
     end
 
     if commandArray[1] ~= "carboncopy" and commandArray[1] ~= "addcctickets" and commandArray[1] ~= "CCACCOUNTTICKETS" then
@@ -64,12 +70,70 @@ function cc_CopyCharacter(event, player, command, chatHandler)
 
         if player == nil and ccSubCommandConsole == "tickets" then
             if commandArray[3] == nil then
-                chatHandler:SendSysMessage("Syntax: .carboncopy tickets $CharacterName")
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets $characterName")
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
                 cc_resetVariables()
                 return false
             end
 
-            local lookupCharacterName = cc_normalizeCharacterName(commandArray[3])
+            local ticketsAction = string.lower(commandArray[3])
+            if ticketsAction == "add" then
+                if commandArray[4] == nil or commandArray[5] == nil then
+                    chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
+                    cc_resetVariables()
+                    return false
+                end
+
+                if tonumber(commandArray[5]) == nil or tonumber(commandArray[5]) > 1000 or tonumber(commandArray[5]) < 0 then
+                    chatHandler:SendSysMessage("Too large or negative amount chosen for .carboncopy tickets add: "..commandArray[5]..". Max allowed is +1000.")
+                    cc_resetVariables()
+                    return false
+                end
+
+                local normalisedCharacterName = cc_normalizeCharacterName(commandArray[4])
+                local Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..normalisedCharacterName.."' LIMIT 1;")
+                local accountId
+                local oldTickets
+                if Data_SQL ~= nil then
+                    accountId = Data_SQL:GetUInt32(0)
+                else
+                    chatHandler:SendSysMessage("Player name not found. Syntax: .carboncopy tickets add $characterName $amount")
+                    cc_resetVariables()
+                    return false
+                end
+
+                Data_SQL = CharDBQuery('SELECT `tickets` FROM `'..Config.customDbName..'`.`carboncopy` WHERE `account_id` = '..accountId..' LIMIT 1;')
+                if Data_SQL ~= nil then
+                    oldTickets = Data_SQL:GetUInt32(0)
+                else
+                    oldTickets = 0
+                end
+
+                if oldTickets >= 1000 or oldTickets < 0 then
+                    chatHandler:SendSysMessage("Too large total amount tickets: "..commandArray[5]..". Max allowed total is +1000. Current value: "..oldTickets)
+                    cc_resetVariables()
+                    return false
+                end
+
+                CharDBQuery('DELETE FROM `'..Config.customDbName..'`.`carboncopy` WHERE `account_id` = '..accountId..';')
+                CharDBQuery('INSERT INTO `'..Config.customDbName..'`.`carboncopy` VALUES ('..accountId..', '..commandArray[5] + oldTickets..', 0);')
+                chatHandler:SendSysMessage("The console has sucessfully used the .carboncopy tickets add command, adding "..commandArray[5].." tickets to the account "..accountId.." which belongs to player "..normalisedCharacterName..".")
+                cc_resetVariables()
+                return false
+            end
+
+            local lookupNameArg = commandArray[3]
+            if ticketsAction == "lookup" then
+                if commandArray[4] == nil then
+                    chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
+                    cc_resetVariables()
+                    return false
+                end
+                lookupNameArg = commandArray[4]
+            end
+
+            local lookupCharacterName = cc_normalizeCharacterName(lookupNameArg)
             local Data_SQL = CharDBQuery('SELECT `account` FROM `characters` WHERE `name` = "'..lookupCharacterName..'" LIMIT 1;')
             if Data_SQL == nil then
                 chatHandler:SendSysMessage("Character name not found. Check spelling.")
@@ -93,7 +157,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
 
         if player == nil then
             chatHandler:SendSysMessage("This command can not be run from the console, but only from the character to copy.")
-            chatHandler:SendSysMessage("Expected syntax: .addcctickets $CharacterName $Amount")
+            chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount")
             return false
         end
         -- make sure the player is properly ranked
@@ -105,7 +169,10 @@ function cc_CopyCharacter(event, player, command, chatHandler)
 
         -- provide syntax help
         if commandArray[2] == "help" then
-            chatHandler:SendSysMessage("Syntax: .carboncopy $NewCharacterName")
+            chatHandler:SendSysMessage("Syntax: .carboncopy $newCharacterName")
+            chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
+            chatHandler:SendSysMessage("Syntax: .carboncopy tickets $characterName")
+            chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
             cc_resetVariables()
             return false
         end
@@ -129,12 +196,76 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         local ccSubCommand = string.lower(commandArray[2])
         if ccSubCommand == "tickets" then
             if commandArray[3] == nil then
-                chatHandler:SendSysMessage("Syntax: .carboncopy tickets $CharacterName")
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets $characterName")
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
                 cc_resetVariables()
                 return false
             end
 
-            local lookupCharacterName = cc_normalizeCharacterName(commandArray[3])
+            local ticketsAction = string.lower(commandArray[3])
+            if ticketsAction == "add" then
+                if player:GetGMRank() < Config.minGMRankForTickets then
+                    chatHandler:SendSysMessage("You lack permisisions to execute this command.")
+                    cc_resetVariables()
+                    return false
+                end
+
+                if commandArray[4] == nil or commandArray[5] == nil then
+                    chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
+                    cc_resetVariables()
+                    return false
+                end
+
+                if tonumber(commandArray[5]) == nil or tonumber(commandArray[5]) > 1000 or tonumber(commandArray[5]) < 0 then
+                    chatHandler:SendSysMessage("Too large or negative amount chosen for .carboncopy tickets add: "..commandArray[5]..". Max allowed is +1000.")
+                    cc_resetVariables()
+                    return false
+                end
+
+                local normalisedCharacterName = cc_normalizeCharacterName(commandArray[4])
+                local Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..normalisedCharacterName.."' LIMIT 1;")
+                local addAccountId
+                local oldTickets
+                if Data_SQL ~= nil then
+                    addAccountId = Data_SQL:GetUInt32(0)
+                else
+                    chatHandler:SendSysMessage("Player name not found. Syntax: .carboncopy tickets add $characterName $amount")
+                    cc_resetVariables()
+                    return false
+                end
+
+                Data_SQL = CharDBQuery('SELECT `tickets` FROM `'..Config.customDbName..'`.`carboncopy` WHERE `account_id` = '..addAccountId..' LIMIT 1;')
+                if Data_SQL ~= nil then
+                    oldTickets = Data_SQL:GetUInt32(0)
+                else
+                    oldTickets = 0
+                end
+
+                if oldTickets >= 1000 or oldTickets < 0 then
+                    chatHandler:SendSysMessage("Too large total amount tickets: "..commandArray[5]..". Max allowed total is +1000. Current value: "..oldTickets)
+                    cc_resetVariables()
+                    return false
+                end
+
+                CharDBQuery('DELETE FROM `'..Config.customDbName..'`.`carboncopy` WHERE `account_id` = '..addAccountId..';')
+                CharDBQuery('INSERT INTO `'..Config.customDbName..'`.`carboncopy` VALUES ('..addAccountId..', '..commandArray[5] + oldTickets..', 0);')
+                chatHandler:SendSysMessage("GM "..player:GetName().. " has sucessfully used the .carboncopy tickets add command, adding "..commandArray[5].." tickets to the account "..addAccountId.." which belongs to player "..normalisedCharacterName..".")
+                cc_resetVariables()
+                return false
+            end
+
+            local lookupNameArg = commandArray[3]
+            if ticketsAction == "lookup" then
+                if commandArray[4] == nil then
+                    chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
+                    cc_resetVariables()
+                    return false
+                end
+                lookupNameArg = commandArray[4]
+            end
+
+            local lookupCharacterName = cc_normalizeCharacterName(lookupNameArg)
             local Data_SQL = CharDBQuery('SELECT `account` FROM `characters` WHERE `name` = "'..lookupCharacterName..'" LIMIT 1;')
             if Data_SQL == nil then
                 chatHandler:SendSysMessage("Character name not found. Check spelling.")
@@ -577,6 +708,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         return false
 
     elseif commandArray[1] == "addcctickets" then
+        -- Kept for Legacy / Compotability
         -- make sure the player is properly ranked
         local accountId
         local oldTickets
@@ -587,12 +719,12 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 return false
             end
             if commandArray[2] == "help" then
-                chatHandler:SendSysMessage("Syntax: .addcctickets $CharacterName $Amount")
+                chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount")
                 cc_resetVariables()
                 return false
             end
             if commandArray[2] == nil or commandArray[3] == nil then
-                chatHandler:SendSysMessage("Expected syntax: .addcctickets $CharacterName $Amount")
+                chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount")
                 cc_resetVariables()
                 return false
             end
@@ -608,7 +740,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             if Data_SQL ~= nil then
                 accountId = Data_SQL:GetUInt32(0)
             else
-                chatHandler:SendSysMessage("Player name not found. Expected syntax: .addcctickets [CharacterName] [Amount]")
+                chatHandler:SendSysMessage("Player name not found. Syntax: .addcctickets $characterName $amount")
                 cc_resetVariables()
                 return false
             end
@@ -639,12 +771,12 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         else
             --player is nil, must be the console. no need to check gm rank and print to console only. not chat
             if commandArray[2] == "help" then
-                chatHandler:SendSysMessage("Syntax: .addcctickets $CharacterName $Amount")
+                chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount")
                 cc_resetVariables()
                 return false
             end
             if commandArray[2] == nil or commandArray[3] == nil then
-                chatHandler:SendSysMessage("Expected syntax: .addcctickets $CharacterName $Amount")
+                chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount")
                 cc_resetVariables()
                 return false
             end
@@ -660,7 +792,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             if Data_SQL ~= nil then
                 accountId = Data_SQL:GetUInt32(0)
             else
-                chatHandler:SendSysMessage("Player name not found. Expected syntax: .addcctickets [CharacterName] [Amount]")
+                chatHandler:SendSysMessage("Player name not found. Syntax: .addcctickets $characterName $amount")
                 cc_resetVariables()
                 return false
             end
@@ -727,7 +859,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         chatHandler:SendSysMessage("'CCACCOUNTTICKETS $accountName $amount' only works against SOAP / the console.")
         return false
     else
-        chatHandler:SendSysMessage("Expected Syntax: CCACCOUNTTICKETS $accountName $amount")
+        chatHandler:SendSysMessage("Syntax: CCACCOUNTTICKETS $accountName $amount")
         return false
     end
 end
