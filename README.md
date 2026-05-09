@@ -1,41 +1,92 @@
-## lua-carbon-copy
-LUA script for Azerothcore with ElunaLUA to allow players to keep copies of their characters at a stage, e.g. for twink pvp.
+# Acore_CarbonCopy
 
-This branch delays the copy process and splits it into 10 pieces to reduce core lag.
+It's a Lua script made for [AzerothCore](https://github.com/azerothcore/azerothcore-wotlk) to allow players to make copies of their characters at specific level of their choosing, an example allowing to have a PVP Twink.
+
+> [!NOTE]
+> This script delays the copy process and splits it into 10 pieces to reduce core / server lag.
+
 
 **Proudly hosted on [ChromieCraft](https://www.chromiecraft.com/)**
 #### Find me on patreon: https://www.patreon.com/Honeys
 
+There a showcase of the video "[CarbonCopy Feature](https://youtu.be/zDdODWPlbLU?si=vCL9TL34lXSCRklB&t=72)".
+
 ## Requirements:
 
-Compile your [Azerothcore](https://github.com/azerothcore/azerothcore-wotlk) with [Eluna Lua](https://www.azerothcore.org/catalogue-details.html?id=131435473), latest version, at least from March 19th, 2021.
+- Requires [mod-ale](https://github.com/azerothcore/mod-ale) (**A**zerothCore **L**ua **E**ngine) to work.
 
-The ElunaLua module itself doesn't require much setup/config. Just specify the subfolder where to put your lua_scripts in its .conf file.
+- If you're using the default `lua_scripts` folder than your `mod_ale.conf` should have `ALE.ScriptPath = "lua_scripts"`, otherwise adjust the path accordingly.
 
-If the directory was not changed, add the .lua script to your `../lua_scripts/` directory.
-Adjust the top part of the .lua file with the config flags.
+- Requires setup of `CarbonCopy_Config.lua` file if you wish to change the values. (`.reload ale` will update the server with the configuration of the file related to the `CarbonCopy` script.)
 
-**On first startup of the core, a scheme specified in the config part of the .lua file will be created.**
+- Adjust `local CarbonCopyConfig = require("CarbonCopy_Config")` of your `CarbonCopy.lua` to match the path of your configuration, by default these two files `CarbonCopy.lua` and `CarbonCopy_Config.lua` should be in the same place.
 
-## Admin Usage:
+## Player Usage:
+
+- `.carboncopy help`
+- `.carboncopy` - Show your current tickets (to be used in-game.)
+- `.carboncopy $newCharacterName` - To Start Carbon Copy to given character name.
+
+## Adminstrator Usage:
+
+- `.carboncopy tickets help`
+- `.carboncopy tickets lookup CharacterName` - See how many tickets a character has.
+- `.carboncopy tickets add CharacterName Amount` - Add tickets to a character's account.
+- `.carboncopy tickets remove CharacterName Amount` - Remove tickets from a character's account.
+- `.addcctickets help` - [Kept for: Legacy/Compatibility]
+- `.addcctickets CharacterName Amount`- [Kept for: Legacy/Compatibility
+] Add tickets to a character's account.
+- `CCACCOUNTTICKETS accountName amount` - Used by [SOAP](https://www.azerothcore.org/wiki/remote-access#soap) for [acore-cms](https://github.com/azerothcore/acore-cms).
+
+## Configuration
+
+```
+customDbName = "ac_eluna" -- Name of the database schema used for CarbonCopy data.
+minGMRankForCopy = 0 -- Minimum GM rank required to use .carboncopy.
+minGMRankForTickets = 2 -- Minimum GM rank required to add or remove tickets.
+freeTickets = 1 -- Tickets granted when an account uses CarbonCopy for the first time.
+mailText = ",\n \n here you are your gear. Have fun with the new twink!\n \n- Sincerely,\n the team of ChromieCraft!" -- Text included in the item mail.
+maxLevel = 70 -- Maximum source character level allowed for copying.
+ticketCost = "level" -- "single" = always 1 ticket, "level" = use ticket_Cost table.
+
+ticket_Cost[19] = 1 -- Cost to copy characters up to level 19.
+ticket_Cost[29] = 2 -- Cost to copy characters up to level 29.
+ticket_Cost[39] = 3 -- Cost to copy characters up to level 39.
+ticket_Cost[49] = 5 -- Cost to copy characters up to level 49.
+ticket_Cost[59] = 8 -- Cost to copy characters up to level 59.
+ticket_Cost[69] = 12 -- Cost to copy characters up to level 69.
+ticket_Cost[79] = 18 -- Cost to copy characters up to level 79.
+ticket_Cost[80] = 25 -- Cost to copy level 80 characters.
+-- This can be scable to any level up or down, if scale up make sure maxLevel also gets updated.
+
+cc_maps[1] = 0 -- Eastern Kingdoms
+cc_maps[2] = 1 -- Kalimdor
+cc_maps[3] = 530 -- Outland
+cc_maps[4] = 571 -- Northrend
+-- This allows custom maps if any are used.
+```
 
 Set the conf flags in the top section of the .lua file.
 
 You need to grant account related tickets in the `carboncopy` table:
-- `account_id` refers to the unique guid of the account.
-- `tickets is the # of times a player can copy a character`
-- `allow_copy_from_id` is reserved for future use. 
+- `account_id` is the unique account ID.
+- `tickets` is the number of times an account can copy a character.
+- `allow_copy_from_id` is reserved for future use.
 
-Or use the command for e.g. SOAP interface granting tickets when sent to worldserver console: Syntax: CCACCOUNTTICKETS $accountName $amount
-ingame command to grant tickets, by default restricted to GM-level 2+.
-Syntax: `.addcctickets $characterName $amount`. `.addcctickets help` shows a syntax message.
+You can also grant tickets from console or SOAP:
+- `CCACCOUNTTICKETS accountName amount`
 
-**Most importantly: `Config.ticketCost`**  If this flag is set to "single", every copy will cost *one* ticket.
-If ticketCost is set to "level", the cost in tickets is determined by the `ticket_Cost` config flags.
+You can grant or remove tickets in game (default restriction: GM rank 2+):
+- `.carboncopy tickets add characterName amount`
+- `.carboncopy tickets remove characterName amount`
+- `.addcctickets characterName amount` (kept for legacy compatibility)
 
-## Player Usage:
-- `.carboncopy help` shows a syntax message
-- `.carboncopy` shows the amount of available tickets
+**Most important setting: `ticketCost`**
+- If set to `single`, every copy costs 1 ticket.
+- If set to `level`, ticket cost is determined by the `ticket_Cost[...]` brackets.
+
+## Copy Workflow
+
 
 - Create a new character with same class/race as the one to copy in the same account. Do NOT log it in.
 - Log in with the source character
@@ -44,18 +95,20 @@ If ticketCost is set to "level", the cost in tickets is determined by the `ticke
 - Log on the new character, find a mailbox. Possibly the items in the mail show no enchants/gems. Once you take the items out of the mailbox, all modifications will be visible. On latest AC modifications are visible in the mailbox already.
 
 ## What it does:
-- Delete the new characters starter gear, except the Homestone.
-- Send copies of all items worn to the new character by mail. Including gems and enchants. 
-- Grant the new character the sources level, xp, discovered flightmasters, /played, stats, explored zones, homebind
-- Grant hunters a copy of their **oldest** pet and previously bought stable slots. It's talent points are refunded. Shamans get their low level totems copied if they still have them
-- Complete all quests on the new character, which the source has completed already
-- Grant the new character all gained reputation, talents, glyphs, spells and skills
-- **Place all actions on the new characters bars. If you copy your macro data from one characters /wtf/ directory to the other, you do not need to setup macros either.**
+- Deletes the new character's starter gear, except the Hearthstone.
+- Sends copies of all equipped items to the new character by mail, including gems and enchants.
+- Copies level, XP, discovered flight masters, played time, stats, explored zones, and homebind.
+- For Hunters, copies the **oldest** pet and bought stable slots (pet talent points are refunded).
+- For Shamans, copies low level totems if the source character still has them.
+- Copies completed quests, reputation, talents, glyphs, spells, and character skills (including professions).
+- Places actions on the new character's bars.
+- If you copy macro data from one character's `/wtf/` folder to the other, macro setup is usually not needed.
 
 ## What it **NOT** does:
-- No items from bags/bank are copied. No bags are copied. All starter gear is deleted except the homestone.
-- No gold is copied. The new character will be at zero copper.
-- No achievements are copied. Achievements were made with the source characters and are reserved to them.
+- Does not copy bag or bank items.
+- Does not copy bag containers.
+- Does not copy gold; the new character starts at 0 copper.
+- Does not copy achievements.
 
 Example query to add one free ticket to all existing accounts:
 
