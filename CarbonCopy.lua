@@ -71,7 +71,6 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         if player == nil and ccSubCommandConsole == "tickets" then
             if commandArray[3] == nil then
                 chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
-                chatHandler:SendSysMessage("Syntax: .carboncopy tickets $characterName")
                 chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
                 cc_resetVariables()
                 return false
@@ -123,14 +122,18 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 return false
             end
 
-            local lookupNameArg = commandArray[3]
-            if ticketsAction == "lookup" then
-                if commandArray[4] == nil then
-                    chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
-                    cc_resetVariables()
-                    return false
-                end
-                lookupNameArg = commandArray[4]
+            if ticketsAction ~= "lookup" then
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
+                cc_resetVariables()
+                return false
+            end
+
+            local lookupNameArg = commandArray[4]
+            if lookupNameArg == nil then
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
+                cc_resetVariables()
+                return false
             end
 
             local lookupCharacterName = cc_normalizeCharacterName(lookupNameArg)
@@ -171,7 +174,6 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         if commandArray[2] == "help" then
             chatHandler:SendSysMessage("Syntax: .carboncopy $newCharacterName")
             chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
-            chatHandler:SendSysMessage("Syntax: .carboncopy tickets $characterName")
             chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
             cc_resetVariables()
             return false
@@ -197,7 +199,6 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         if ccSubCommand == "tickets" then
             if commandArray[3] == nil then
                 chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
-                chatHandler:SendSysMessage("Syntax: .carboncopy tickets $characterName")
                 chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
                 cc_resetVariables()
                 return false
@@ -255,14 +256,18 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 return false
             end
 
-            local lookupNameArg = commandArray[3]
-            if ticketsAction == "lookup" then
-                if commandArray[4] == nil then
-                    chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
-                    cc_resetVariables()
-                    return false
-                end
-                lookupNameArg = commandArray[4]
+            if ticketsAction ~= "lookup" then
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
+                cc_resetVariables()
+                return false
+            end
+
+            local lookupNameArg = commandArray[4]
+            if lookupNameArg == nil then
+                chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
+                cc_resetVariables()
+                return false
             end
 
             local lookupCharacterName = cc_normalizeCharacterName(lookupNameArg)
