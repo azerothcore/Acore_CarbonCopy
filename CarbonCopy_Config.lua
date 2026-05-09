@@ -16,8 +16,10 @@ Config.mailText = ",\n \n here you are your gear. Have fun with the new twink!\n
 Config.maxLevel = 79
 -- Whether the ticket amount withdrawn for a copy is always 1 (set it to "single") or depends on the level (set this to "level")
 Config.ticketCost = "level"
--- Whether to copy equipment sets to the new character (requires "Use Equipment Manager" enabled in Interface > Features)
-Config.copyEquipmentSets = true
+-- Keep starting / existing items on the target character instead of deleting all except hearthstone (true = yes | false = no)
+Config.keepStartingItems = false
+-- Whether to copy equipment sets to the new character (requires "Use Equipment Manager" enabled in Interface > Features) (true = yes | false = no)
+Config.copyEquipmentSets = false
 -- Here you can adjust the cost in tickets if Config.ticketCost is set to "level"
 ticket_Cost[19] = 1
 ticket_Cost[29] = 1

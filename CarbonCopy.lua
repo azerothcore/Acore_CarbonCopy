@@ -769,11 +769,13 @@ function cc_CopyCharacter(event, player, command, chatHandler)
 
         coroutine.yield()
         --Copy items
-        local homeStone
-        local Data_SQL = CharDBQuery('DELETE FROM item_instance WHERE owner_guid = '..cc_newCharacter..' AND itemEntry != 6948;')
-        local Data_SQL = CharDBQuery('SELECT guid FROM item_instance WHERE owner_guid = '..cc_newCharacter..' AND itemEntry = 6948 LIMIT 1;')
-        homeStone = Data_SQL:GetUInt32(0)
-        local Data_SQL = CharDBQuery('DELETE FROM character_inventory WHERE guid = '..cc_newCharacter..' AND item != '..homeStone..';')
+        if not Config.keepStartingItems then
+            local homeStone
+            local Data_SQL = CharDBQuery('DELETE FROM item_instance WHERE owner_guid = '..cc_newCharacter..' AND itemEntry != 6948;')
+            local Data_SQL = CharDBQuery('SELECT guid FROM item_instance WHERE owner_guid = '..cc_newCharacter..' AND itemEntry = 6948 LIMIT 1;')
+            homeStone = Data_SQL:GetUInt32(0)
+            local Data_SQL = CharDBQuery('DELETE FROM character_inventory WHERE guid = '..cc_newCharacter..' AND item != '..homeStone..';')
+        end
         Data_SQL = nil
 
         local Data_SQL = CharDBQuery('SELECT item FROM character_inventory WHERE guid = '..cc_playerGUID..' AND bag = 0 AND slot <= 18 LIMIT 18;')
