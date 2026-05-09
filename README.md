@@ -34,8 +34,7 @@ There a showcase of the video "[CarbonCopy Feature](https://youtu.be/zDdODWPlbLU
 - `.carboncopy tickets add CharacterName Amount` - Add tickets to a character's account.
 - `.carboncopy tickets remove CharacterName Amount` - Remove tickets from a character's account.
 - `.addcctickets help` - [Kept for: Legacy/Compatibility]
-- `.addcctickets CharacterName Amount`- [Kept for: Legacy/Compatibility
-] Add tickets to a character's account.
+- `.addcctickets CharacterName Amount`- [Kept for: Legacy/Compatibility] Add tickets to a character's account.
 - `CCACCOUNTTICKETS accountName amount` - Used by [SOAP](https://www.azerothcore.org/wiki/remote-access#soap) for [acore-cms](https://github.com/azerothcore/acore-cms).
 
 ## Configuration
