@@ -88,7 +88,7 @@ You can grant or remove tickets in game (default restriction: GM rank 2+):
 
 **Optional settings**
 - `keepStartingItems`: When `true`, the target character keeps existing starter/equipped items. When `false`, all target items except Hearthstone are deleted before copied gear is mailed.
-- `copyEquipmentSets`: When `true`, Equipment Manager sets are copied and remapped to the new mailed item GUIDs. This requires the in-game "Use Equipment Manager" feature to be enabled.
+- `copyEquipmentSets`: When `true`, Equipment Manager sets are copied and remapped to the new mailed item GUIDs. This requires the in-game "Use Equipment Manager" feature to be enabled. **Design note:** Only currently equipped items are included in equipment set copying to minimize server queries and load. This means equipment sets will only contain properly remapped items for gear that was actively equipped. Any set slots that referenced non-equipped items will show as empty (0) in the copied set.
 
 ## Copy Workflow
 
