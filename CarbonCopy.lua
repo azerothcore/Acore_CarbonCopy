@@ -45,7 +45,7 @@ CharDBQuery('CREATE TABLE IF NOT EXISTS `'..Config.customDbName..'`.`'..cc_carbo
     ..'`account_id` INT(11) NOT NULL, '
     ..'`tickets` INT(11) DEFAULT 0, '
     ..'`allow_copy_from_id` INT(11) DEFAULT 0, '
-    ..'PRIMARY KEY (`account_id`)
+    ..'PRIMARY KEY (`account_id`)'
     ..') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DEFAULT;'
 )
 
@@ -64,7 +64,7 @@ if cc_enablePlayerLogs then
         ..'KEY `idx_ccpl_source_guid` (`source_guid`), '
         ..'KEY `idx_ccpl_target_guid` (`target_guid`), '
         ..'KEY `idx_ccpl_status_code` (`status_code`), '
-        ..'KEY `idx_ccpl_created_at` (`created_at`)
+        ..'KEY `idx_ccpl_created_at` (`created_at`)'
         ..') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DEFAULT;'
     )
 end
@@ -86,7 +86,7 @@ if cc_enableAdminLogs then
         ..'KEY `idx_ccal_target_guid` (`target_guid`), '
         ..'KEY `idx_ccal_action_code` (`action_code`), '
         ..'KEY `idx_ccal_status_code` (`status_code`), '
-        ..'KEY `idx_ccal_created_at` (`created_at`)
+        ..'KEY `idx_ccal_created_at` (`created_at`)'
         ..') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DEFAULT;'
     )
 end
@@ -252,7 +252,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 CharDBQuery('DELETE FROM `'..Config.customDbName..'`.`'..cc_carboncopyTable..'` WHERE `account_id` = '..accountId..';')
                 CharDBQuery('INSERT INTO `'..Config.customDbName..'`.`'..cc_carboncopyTable..'` VALUES ('..accountId..', '..commandArray[5] + oldTickets..', 0);')
                 chatHandler:SendSysMessage("The console has sucessfully used the .carboncopy tickets add command, adding "..commandArray[5].." tickets to the account "..accountId.." which belongs to player "..normalisedCharacterName..".")
-                cc_logAdmin("console", nil, normalisedCharacterName, nil, nil, CC_ACTION_GM_ADD, oldTickets, oldTickets + tonumber(commandArray[5]), CC_STATUS_SUCCESS, "Console .carboncopy tickets add")
+                cc_logAdmin("console", nil, normalisedCharacterName, nil, nil, CC_ACTION_GM_ADD, oldTickets, oldTickets + tonumber(commandArray[5]), CC_STATUS_SUCCESS, "Console .carboncopy tickets add "..normalisedCharacterName.." "..commandArray[5])
                 cc_resetVariables()
                 return false
             end
@@ -302,7 +302,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 CharDBQuery('DELETE FROM `'..Config.customDbName..'`.`'..cc_carboncopyTable..'` WHERE `account_id` = '..accountId..';')
                 CharDBQuery('INSERT INTO `'..Config.customDbName..'`.`'..cc_carboncopyTable..'` VALUES ('..accountId..', '..oldTickets - commandArray[5]..', 0);')
                 chatHandler:SendSysMessage("The console has sucessfully used the .carboncopy tickets remove command, removing "..commandArray[5].." tickets from the account "..accountId.." which belongs to player "..normalisedCharacterName..".")
-                cc_logAdmin("console", nil, normalisedCharacterName, nil, nil, CC_ACTION_GM_REMOVE, oldTickets, oldTickets - tonumber(commandArray[5]), CC_STATUS_SUCCESS, "Console .carboncopy tickets remove")
+                cc_logAdmin("console", nil, normalisedCharacterName, nil, nil, CC_ACTION_GM_REMOVE, oldTickets, oldTickets - tonumber(commandArray[5]), CC_STATUS_SUCCESS, "Console .carboncopy tickets remove "..normalisedCharacterName.." "..commandArray[5])
                 cc_resetVariables()
                 return false
             end
@@ -342,7 +342,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             end
 
             chatHandler:SendSysMessage("CarbonCopy tickets for "..lookupCharacterName.." (account "..lookupAccountId.."): "..lookupTickets)
-            cc_logAdmin("console", nil, lookupCharacterName, nil, nil, CC_ACTION_GM_LOOKUP, lookupTickets, lookupTickets, CC_STATUS_SUCCESS, "Console .carboncopy tickets lookup")
+            cc_logAdmin("console", nil, lookupCharacterName, nil, nil, CC_ACTION_GM_LOOKUP, lookupTickets, lookupTickets, CC_STATUS_SUCCESS, "Console .carboncopy tickets lookup "..lookupCharacterName)
             cc_resetVariables()
             return false
         end
