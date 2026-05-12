@@ -38,6 +38,9 @@ local cc_enableAdminLogs = Config.enableAdminLogs ~= false
 cc_oldItemGuids = {}
 cc_newItemGuids = {}
 cc_scriptIsBusy = 0
+cc_newCharacterName = nil
+cc_copyTicketsBefore = nil
+cc_copyTicketsAfter = nil
 
 -- If module runs for the first time, create the db specified in Config.dbName and add the "carboncopy" table to it.
 CharDBQuery('CREATE DATABASE IF NOT EXISTS `'..Config.customDbName..'`;');
@@ -374,6 +377,9 @@ function cc_CopyCharacter(event, player, command, chatHandler)
 
         -- print the available tickets
         local accountId = player:GetAccountId()
+        local _ticketsAtEntrySQL = CharDBQuery('SELECT `tickets` FROM `'..Config.customDbName..'`.`'..cc_carboncopyTable..'` WHERE `account_id` = '..accountId..' LIMIT 1;')
+        local ticketsAtEntry = _ticketsAtEntrySQL ~= nil and _ticketsAtEntrySQL:GetUInt32(0) or Config.freeTickets
+        _ticketsAtEntrySQL = nil
         if commandArray[2] == nil then
             local Data_SQL
             Data_SQL = CharDBQuery('SELECT `tickets` FROM `'..Config.customDbName..'`.`'..cc_carboncopyTable..'` WHERE `account_id` = '..accountId..' LIMIT 1;');
@@ -557,7 +563,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         if player:GetLevel() > Config.maxLevel then
             local reason = "The character you want to copy from is too high level. Max level is "..Config.maxLevel..". Aborting."
             chatHandler:SendSysMessage(reason)
-            cc_logPlayer(sourceName, sourceGuid, nil, nil, player:GetLevel(), nil, nil, CC_STATUS_FAILED, reason)
+            cc_logPlayer(sourceName, sourceGuid, nil, nil, player:GetLevel(), ticketsAtEntry, ticketsAtEntry, CC_STATUS_FAILED, reason)
             cc_resetVariables()
             return false
         end
@@ -571,7 +577,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         if Data_SQL == nil then
             local reason = "Name not found. Check spelling. Aborting."
             chatHandler:SendSysMessage(reason)
-            cc_logPlayer(sourceName, sourceGuid, targetName, nil, player:GetLevel(), nil, nil, CC_STATUS_FAILED, reason)
+            cc_logPlayer(sourceName, sourceGuid, targetName, nil, player:GetLevel(), ticketsAtEntry, ticketsAtEntry, CC_STATUS_FAILED, reason)
             cc_resetVariables()
             return false
         end
@@ -580,7 +586,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         if targetAccountId ~= accountId then
             local reason = "The requested character is not on the same account. Aborting."
             chatHandler:SendSysMessage(reason)
-            cc_logPlayer(sourceName, sourceGuid, targetName, nil, player:GetLevel(), nil, nil, CC_STATUS_FAILED, reason)
+            cc_logPlayer(sourceName, sourceGuid, targetName, nil, player:GetLevel(), ticketsAtEntry, ticketsAtEntry, CC_STATUS_FAILED, reason)
             cc_resetVariables()
             return false
         end
@@ -592,7 +598,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
        	else
             local reason = "Name not found. Check spelling. Aborting."
             chatHandler:SendSysMessage(reason)
-            cc_logPlayer(sourceName, sourceGuid, targetName, nil, player:GetLevel(), nil, nil, CC_STATUS_FAILED, reason)
+            cc_logPlayer(sourceName, sourceGuid, targetName, nil, player:GetLevel(), ticketsAtEntry, ticketsAtEntry, CC_STATUS_FAILED, reason)
             cc_resetVariables()
             return false
         end
@@ -721,6 +727,9 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         Ban(1, targetName, 15, "CarbonCopy", "CarbonCopy" )
         cc_scriptIsBusy = 1
         cc_newCharacter = newCharacter
+        cc_newCharacterName = targetName
+        cc_copyTicketsBefore = availableTickets
+        cc_copyTicketsAfter = availableTickets - requiredTickets
 
         -- save the source character to db to prevent recent changes from being not applied
         player:SaveToDB()
@@ -1207,9 +1216,15 @@ function cc_fixItems()
         end
     end
 
-    GetPlayerByGUID(cc_playerGUID):SendBroadcastMessage("Character copy done. You can log out now.")
+    local copyingPlayer = GetPlayerByGUID(cc_playerGUID)
+    if copyingPlayer ~= nil then
+        copyingPlayer:SendBroadcastMessage("Character copy done. You can log out now.")
+    end
     PrintInfo("2) Item enchants/gems copied for new character with GUID "..cc_newCharacter);
     cc_newCharacter = 0
+    cc_newCharacterName = nil
+    cc_copyTicketsBefore = nil
+    cc_copyTicketsAfter = nil
     cc_oldItemGuids = {}
     cc_newItemGuids = {}
     cc_scriptIsBusy = 0
@@ -1280,5 +1295,31 @@ function cc_resumeSubRoutine(eventId, delay, repeats)
 end
 
 local PLAYER_EVENT_ON_COMMAND = 42
+local PLAYER_EVENT_ON_LOGOUT = 4
+
+-- If the player who initiated a copy disconnects mid-copy, release the busy lock.
+-- The coroutine will still finish its DB work, but the lock would never reset otherwise.
+local function cc_OnPlayerLogout(event, player)
+    if cc_scriptIsBusy ~= 0 and cc_playerGUID ~= nil then
+        local guid = tonumber(tostring(player:GetGUID()))
+        if guid == cc_playerGUID then
+            PrintInfo("CarbonCopy: Source player disconnected mid-copy (GUID "..cc_playerGUID.."). Releasing busy lock.")
+            cc_logPlayer(
+                player:GetName(), guid,
+                cc_newCharacterName, cc_newCharacter ~= 0 and cc_newCharacter or nil,
+                player:GetLevel(),
+                cc_copyTicketsBefore, cc_copyTicketsAfter,
+                CC_STATUS_FAILED, "Source player disconnected mid-copy"
+            )
+            cc_scriptIsBusy = 0
+            cc_playerGUID = nil
+            cc_newCharacterName = nil
+            cc_copyTicketsBefore = nil
+            cc_copyTicketsAfter = nil
+        end
+    end
+end
+
 -- function to be called when the command hook fires
 RegisterPlayerEvent(PLAYER_EVENT_ON_COMMAND, cc_CopyCharacter)
+RegisterPlayerEvent(PLAYER_EVENT_ON_LOGOUT, cc_OnPlayerLogout)
