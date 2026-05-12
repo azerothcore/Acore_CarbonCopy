@@ -242,9 +242,23 @@ local function cc_execLogsCommand(chatHandler, commandArray, startIdx)
         ..' ORDER BY `created_at` '..orderDir
         ..' LIMIT '..limitN..';'
 
+    -- Build active-filter summary for header
+    local activeFilters = {}
+    if filterSource ~= nil then table.insert(activeFilters, "source:"..filterSource) end
+    if filterTarget ~= nil then table.insert(activeFilters, "target:"..filterTarget) end
+    if filterDay    ~= nil then table.insert(activeFilters, "day:"..filterDay) end
+    local filterSummary = (#activeFilters > 0) and table.concat(activeFilters, "  ") or "none"
+
+    -- Header
+    chatHandler:SendSysMessage("========== CarbonCopy Player Logs ==========")
+    chatHandler:SendSysMessage("Filters: "..filterSummary.."  |  limit:"..limitN.."  |  "..(orderOldest and "oldest first" or "newest first"))
+    chatHandler:SendSysMessage("  Time (MM-DD HH:MM)  Source (guid) [lv]  ->  Target (guid)  tix:before=>after  Reason")
+    chatHandler:SendSysMessage("--------------------------------------------")
+
     local rows = CharDBQuery(sql)
     if rows == nil then
-        chatHandler:SendSysMessage("No player log entries found.")
+        chatHandler:SendSysMessage("  (no entries found matching the filters)")
+        chatHandler:SendSysMessage("============================================")
         return
     end
 
@@ -260,18 +274,25 @@ local function cc_execLogsCommand(chatHandler, commandArray, startIdx)
         local reason    = rows:GetString(8)
         local createdAt = rows:GetString(9)
 
-        local line = "["..createdAt.."] "..sName.." ("..sGuid..") [lv"..sLevel.."]"
-        if tName ~= nil and tName ~= "" then
-            line = line.." -> "..tName.." ("..tGuid..")"
-        end
-        line = line.." | tickets("..tickBef.."=>"..tickAft..")"
-        line = line.." | "..reason
+        -- Shorten timestamp to "MM-DD HH:MM" from "YYYY-MM-DD HH:MM:SS"
+        local timeStr = createdAt:sub(6, 16)
 
-        chatHandler:SendSysMessage(line)
+        local srcPart = sName.." ("..sGuid..") [lv"..sLevel.."]"
+
+        local tgtPart = ""
+        if tName ~= nil and tName ~= "" then
+            tgtPart = " -> "..tName.." ("..tGuid..")"
+        end
+
+        local tickPart = "  tix:"..tickBef.."=>"..tickAft
+
+        chatHandler:SendSysMessage("["..timeStr.."] "..srcPart..tgtPart..tickPart.."  "..reason)
         count = count + 1
     until not rows:NextRow()
 
-    chatHandler:SendSysMessage("--- "..count.." result(s) | limit "..limitN.." | order: "..(orderOldest and "oldest" or "newest").." ---")
+    chatHandler:SendSysMessage("--------------------------------------------")
+    chatHandler:SendSysMessage(count.." result(s)  |  limit "..limitN.."  |  "..(orderOldest and "oldest first" or "newest first"))
+    chatHandler:SendSysMessage("============================================")
 end
 
 function cc_CopyCharacter(event, player, command, chatHandler)
