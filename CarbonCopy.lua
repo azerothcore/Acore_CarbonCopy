@@ -22,6 +22,13 @@ local Config = CarbonCopyConfig.Config
 local cc_maps = CarbonCopyConfig.cc_maps
 local ticket_Cost = CarbonCopyConfig.ticket_Cost
 
+-- Fallback / compatibility defaults for older configs.
+local cc_carboncopyTable = Config.carboncopyTableName or "carboncopy"
+local cc_playerLogsTable = Config.playerLogsTableName or "carboncopy_player_logs"
+local cc_adminLogsTable = Config.adminLogsTableName or "carboncopy_admin_logs"
+local cc_enablePlayerLogs = Config.enablePlayerLogs ~= false
+local cc_enableAdminLogs = Config.enableAdminLogs ~= false
+
 
 ------------------------------------------
 -- NO ADJUSTMENTS REQUIRED BELOW THIS LINE
@@ -34,7 +41,55 @@ cc_scriptIsBusy = 0
 
 -- If module runs for the first time, create the db specified in Config.dbName and add the "carboncopy" table to it.
 CharDBQuery('CREATE DATABASE IF NOT EXISTS `'..Config.customDbName..'`;');
-CharDBQuery('CREATE TABLE IF NOT EXISTS `'..Config.customDbName..'`.`carboncopy` (`account_id` INT(11) NOT NULL, `tickets` INT(11) DEFAULT 0, `allow_copy_from_id` INT(11) DEFAULT 0, PRIMARY KEY (`account_id`) );');
+CharDBQuery('CREATE TABLE IF NOT EXISTS `'..Config.customDbName..'`.`'..cc_carboncopyTable..'` ('
+    ..'`account_id` INT(11) NOT NULL, '
+    ..'`tickets` INT(11) DEFAULT 0, '
+    ..'`allow_copy_from_id` INT(11) DEFAULT 0, '
+    ..'PRIMARY KEY (`account_id`)
+    ..') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DEFAULT;'
+)
+
+if cc_enablePlayerLogs then
+    CharDBQuery('CREATE TABLE IF NOT EXISTS `'..Config.customDbName..'`.`'..cc_playerLogsTable..'` ('
+        ..'`source_name` VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL, '
+        ..'`source_guid` INT(11) NOT NULL, '
+        ..'`target_name` VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL, '
+        ..'`target_guid` INT(11) DEFAULT NULL, '
+        ..'`source_level` TINYINT UNSIGNED DEFAULT NULL, '
+        ..'`tickets_before` INT(11) DEFAULT NULL, '
+        ..'`tickets_after` INT(11) DEFAULT NULL, '
+        ..'`status_code` TINYINT UNSIGNED NOT NULL COMMENT "0=FREE_CONFIG_TICKET,1=SUCCESS,2=FAILED", '
+        ..'`reason` VARCHAR(255) DEFAULT NULL, '
+        ..'`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, '
+        ..'KEY `idx_ccpl_source_guid` (`source_guid`), '
+        ..'KEY `idx_ccpl_target_guid` (`target_guid`), '
+        ..'KEY `idx_ccpl_status_code` (`status_code`), '
+        ..'KEY `idx_ccpl_created_at` (`created_at`)
+        ..') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DEFAULT;'
+    )
+end
+
+if cc_enableAdminLogs then
+    CharDBQuery('CREATE TABLE IF NOT EXISTS `'..Config.customDbName..'`.`'..cc_adminLogsTable..'` ('
+        ..'`source_name` VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL, '
+        ..'`source_guid` INT(11) DEFAULT NULL, '
+        ..'`target_name` VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL, '
+        ..'`target_guid` INT(11) DEFAULT NULL, '
+        ..'`target_level` TINYINT UNSIGNED DEFAULT NULL, '
+        ..'`action_code` TINYINT UNSIGNED NOT NULL COMMENT "3=GM_ADD,4=GM_REMOVE,5=GM_LOOKUP", '
+        ..'`tickets_before` INT(11) DEFAULT NULL, '
+        ..'`tickets_after` INT(11) DEFAULT NULL, '
+        ..'`status_code` TINYINT UNSIGNED NOT NULL COMMENT "1=SUCCESS,2=FAILED", '
+        ..'`reason` VARCHAR(255) DEFAULT NULL, '
+        ..'`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, '
+        ..'KEY `idx_ccal_source_guid` (`source_guid`), '
+        ..'KEY `idx_ccal_target_guid` (`target_guid`), '
+        ..'KEY `idx_ccal_action_code` (`action_code`), '
+        ..'KEY `idx_ccal_status_code` (`status_code`), '
+        ..'KEY `idx_ccal_created_at` (`created_at`)
+        ..') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DEFAULT;'
+    )
+end
 
 function cc_CopyCharacter(event, player, command, chatHandler)
 
