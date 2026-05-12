@@ -185,6 +185,7 @@ local function cc_execLogsCommand(chatHandler, commandArray, startIdx)
     local filterCode    = nil
     local limitN        = 20
     local orderOldest   = false
+    local parseError    = false
 
     local i = startIdx
     while i <= #commandArray do
@@ -222,8 +223,14 @@ local function cc_execLogsCommand(chatHandler, commandArray, startIdx)
             orderOldest = true
         else
             chatHandler:SendSysMessage("Unknown flag: "..commandArray[i]..". Use 'help' or '--help' for usage.")
+            parseError = true
+            break
         end
         i = i + 1
+    end
+
+    if parseError then
+        return
     end
 
     local conditions = {}
