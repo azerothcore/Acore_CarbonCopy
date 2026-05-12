@@ -162,6 +162,118 @@ local function cc_logAdmin(sourceName, sourceGuid, targetName, targetGuid, targe
     )
 end
 
+-- cc_execLogsCommand: shared handler for ".carboncopy logs" from console or GM.
+-- Flags (all optional, any order after "carboncopy logs"):
+--   --source  name|guid   filter by source character name or GUID
+--   --target  name|guid   filter by target character name or GUID
+--   --day     YYYY-MM-DD  show only entries from this date (server time)
+--   --limit   N           max rows returned, 1-100 (default 20)
+--   --oldest              sort oldest-first (default newest-first)
+local function cc_execLogsCommand(chatHandler, commandArray, startIdx)
+    local filterSource  = nil
+    local filterTarget  = nil
+    local filterDay     = nil
+    local limitN        = 20
+    local orderOldest   = false
+
+    local i = startIdx
+    while i <= #commandArray do
+        local flag = string.lower(commandArray[i])
+        if flag == "--source" then
+            i = i + 1
+            if commandArray[i] ~= nil then filterSource = commandArray[i] end
+        elseif flag == "--target" then
+            i = i + 1
+            if commandArray[i] ~= nil then filterTarget = commandArray[i] end
+        elseif flag == "--day" then
+            i = i + 1
+            if commandArray[i] ~= nil then filterDay = commandArray[i] end
+        elseif flag == "--limit" then
+            i = i + 1
+            if commandArray[i] ~= nil then
+                local n = tonumber(commandArray[i])
+                if n ~= nil and n >= 1 and n <= 100 then
+                    limitN = math.floor(n)
+                else
+                    chatHandler:SendSysMessage("--limit must be 1-100. Using default 20.")
+                end
+            end
+        elseif flag == "--oldest" then
+            orderOldest = true
+        else
+            chatHandler:SendSysMessage("Unknown flag: "..commandArray[i]..". Ignored.")
+        end
+        i = i + 1
+    end
+
+    local conditions = {}
+
+    if filterSource ~= nil then
+        if tonumber(filterSource) ~= nil then
+            table.insert(conditions, '`source_guid` = '..math.floor(tonumber(filterSource)))
+        else
+            table.insert(conditions, '`source_name` = '..cc_sqlQuote(cc_normalizeCharacterName(filterSource)))
+        end
+    end
+
+    if filterTarget ~= nil then
+        if tonumber(filterTarget) ~= nil then
+            table.insert(conditions, '`target_guid` = '..math.floor(tonumber(filterTarget)))
+        else
+            table.insert(conditions, '`target_name` = '..cc_sqlQuote(cc_normalizeCharacterName(filterTarget)))
+        end
+    end
+
+    if filterDay ~= nil then
+        if filterDay:match("^%d%d%d%d%-%d%d%-%d%d$") then
+            table.insert(conditions, 'DATE(`created_at`) = '..cc_sqlQuote(filterDay))
+        else
+            chatHandler:SendSysMessage("--day must be YYYY-MM-DD. Day filter ignored.")
+        end
+    end
+
+    local whereClause = (#conditions > 0) and (" WHERE "..table.concat(conditions, " AND ")) or ""
+    local orderDir    = orderOldest and "ASC" or "DESC"
+
+    local sql = 'SELECT `source_name`,`source_guid`,`source_level`,`target_name`,`target_guid`,'
+        ..'`tickets_before`,`tickets_after`,`status_code`,`reason`,`created_at`'
+        ..' FROM `'..Config.customDbName..'`.`'..cc_playerLogsTable..'`'
+        ..whereClause
+        ..' ORDER BY `created_at` '..orderDir
+        ..' LIMIT '..limitN..';'
+
+    local rows = CharDBQuery(sql)
+    if rows == nil then
+        chatHandler:SendSysMessage("No player log entries found.")
+        return
+    end
+
+    local count = 0
+    repeat
+        local sName     = rows:GetString(0)
+        local sGuid     = rows:GetUInt32(1)
+        local sLevel    = rows:GetUInt8(2)
+        local tName     = rows:GetString(3)
+        local tGuid     = rows:GetUInt32(4)
+        local tickBef   = rows:GetInt32(5)
+        local tickAft   = rows:GetInt32(6)
+        local reason    = rows:GetString(8)
+        local createdAt = rows:GetString(9)
+
+        local line = "["..createdAt.."] "..sName.." ("..sGuid..") [lv"..sLevel.."]"
+        if tName ~= nil and tName ~= "" then
+            line = line.." -> "..tName.." ("..tGuid..")"
+        end
+        line = line.." | tickets("..tickBef.."=>"..tickAft..")"
+        line = line.." | "..reason
+
+        chatHandler:SendSysMessage(line)
+        count = count + 1
+    until not rows:NextRow()
+
+    chatHandler:SendSysMessage("--- "..count.." result(s) | limit "..limitN.." | order: "..(orderOldest and "oldest" or "newest").." ---")
+end
+
 function cc_CopyCharacter(event, player, command, chatHandler)
 
     local commandArray = cc_splitString(command)
@@ -350,6 +462,13 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             return false
         end
 
+        if player == nil and ccSubCommandConsole == "logs" then
+            chatHandler:SendSysMessage("Syntax: .carboncopy logs [--source name|guid] [--target name|guid] [--day YYYY-MM-DD] [--limit N] [--oldest]")
+            cc_execLogsCommand(chatHandler, commandArray, 3)
+            cc_resetVariables()
+            return false
+        end
+
         if player == nil then
             local reason = "This command can not be run from the console, but only from the character to copy."
             chatHandler:SendSysMessage(reason)
@@ -371,6 +490,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
             chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
             chatHandler:SendSysMessage("Syntax: .carboncopy tickets remove $characterName $amount")
+            chatHandler:SendSysMessage("Syntax: .carboncopy logs [--source name|guid] [--target name|guid] [--day YYYY-MM-DD] [--limit N] [--oldest]")
             cc_resetVariables()
             return false
         end
@@ -555,6 +675,18 @@ function cc_CopyCharacter(event, player, command, chatHandler)
 
             chatHandler:SendSysMessage("CarbonCopy tickets for "..lookupCharacterName.." (account "..lookupAccountId.."): "..lookupTickets)
             cc_logAdmin(sourceName, sourceGuid, lookupCharacterName, nil, nil, CC_ACTION_GM_LOOKUP, lookupTickets, lookupTickets, CC_STATUS_SUCCESS, "GM .carboncopy tickets lookup")
+            cc_resetVariables()
+            return false
+        end
+
+        if ccSubCommand == "logs" then
+            if player:GetGMRank() < Config.minGMRankForTickets then
+                chatHandler:SendSysMessage("You lack permissions to execute this command.")
+                cc_resetVariables()
+                return false
+            end
+            chatHandler:SendSysMessage("Syntax: .carboncopy logs [--source name|guid] [--target name|guid] [--day YYYY-MM-DD] [--limit N] [--oldest]")
+            cc_execLogsCommand(chatHandler, commandArray, 3)
             cc_resetVariables()
             return false
         end
