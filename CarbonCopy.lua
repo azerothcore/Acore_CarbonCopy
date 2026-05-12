@@ -274,19 +274,27 @@ local function cc_execLogsCommand(chatHandler, commandArray, startIdx)
         local reason    = rows:GetString(8)
         local createdAt = rows:GetString(9)
 
-        -- Shorten timestamp to "MM-DD HH:MM" from "YYYY-MM-DD HH:MM:SS"
-        local timeStr = createdAt:sub(6, 16)
+        -- Shorten timestamp to "YYYY-MM-DD HH:MM" from "YYYY-MM-DD HH:MM:SS"
+        local timeStr = createdAt:sub(1, 16)
 
-        local srcPart = sName.." ("..sGuid..") [lv"..sLevel.."]"
+        local srcPart = sName.." (GUID: "..sGuid..") [lv"..sLevel.."]"
 
         local tgtPart = ""
         if tName ~= nil and tName ~= "" then
-            tgtPart = " -> "..tName.." ("..tGuid..")"
+            tgtPart = " | "..tName.." (GUID: "..tGuid..")"
         end
 
-        local tickPart = "  tix:"..tickBef.."=>"..tickAft
+        local tickPart
+        if tickBef == tickAft then
+            tickPart = tostring(tickBef)
+        else
+            tickPart = tickBef.." => "..tickAft
+        end
 
-        chatHandler:SendSysMessage("["..timeStr.."] "..srcPart..tgtPart..tickPart.."  "..reason)
+        local statusCode = rows:GetUInt8(7)
+        local reasonPart = reason.." (Code: "..statusCode..")"
+
+        chatHandler:SendSysMessage(timeStr.." | "..srcPart..tgtPart.." | "..tickPart.." | "..reasonPart)
         count = count + 1
     until not rows:NextRow()
 
