@@ -163,16 +163,26 @@ local function cc_logAdmin(sourceName, sourceGuid, targetName, targetGuid, targe
 end
 
 -- cc_execLogsCommand: shared handler for ".carboncopy logs" from console or GM.
--- Flags (all optional, any order after "carboncopy logs"):
---   --source  name|guid   filter by source character name or GUID
---   --target  name|guid   filter by target character name or GUID
---   --day     YYYY-MM-DD  show only entries from this date (server time)
---   --limit   N           max rows returned, 1-100 (default 20)
---   --oldest              sort oldest-first (default newest-first)
 local function cc_execLogsCommand(chatHandler, commandArray, startIdx)
+    -- Help subcommand
+    local firstArg = commandArray[startIdx] and string.lower(commandArray[startIdx]) or nil
+    if firstArg == "help" or firstArg == "--help" then
+        chatHandler:SendSysMessage("===== .carboncopy logs flags (all optional) =====")
+        chatHandler:SendSysMessage("  --source  name|guid   filter by source name or GUID")
+        chatHandler:SendSysMessage("  --target  name|guid   filter by target name or GUID")
+        chatHandler:SendSysMessage("  --day     YYYY-MM-DD  entries from this date only")
+        chatHandler:SendSysMessage("  --code    N           filter by status code:")
+        chatHandler:SendSysMessage("                          0=free ticket  1=success  2=failed")
+        chatHandler:SendSysMessage("  --limit   N           max rows 1-100 (default 20)")
+        chatHandler:SendSysMessage("  --oldest              sort oldest-first (default: newest)")
+        chatHandler:SendSysMessage("================================================")
+        return
+    end
+
     local filterSource  = nil
     local filterTarget  = nil
     local filterDay     = nil
+    local filterCode    = nil
     local limitN        = 20
     local orderOldest   = false
 
@@ -188,6 +198,16 @@ local function cc_execLogsCommand(chatHandler, commandArray, startIdx)
         elseif flag == "--day" then
             i = i + 1
             if commandArray[i] ~= nil then filterDay = commandArray[i] end
+        elseif flag == "--code" then
+            i = i + 1
+            if commandArray[i] ~= nil then
+                local n = tonumber(commandArray[i])
+                if n ~= nil and n >= 0 then
+                    filterCode = math.floor(n)
+                else
+                    chatHandler:SendSysMessage("--code must be a non-negative number. Code filter ignored.")
+                end
+            end
         elseif flag == "--limit" then
             i = i + 1
             if commandArray[i] ~= nil then
@@ -201,7 +221,7 @@ local function cc_execLogsCommand(chatHandler, commandArray, startIdx)
         elseif flag == "--oldest" then
             orderOldest = true
         else
-            chatHandler:SendSysMessage("Unknown flag: "..commandArray[i]..". Ignored.")
+            chatHandler:SendSysMessage("Unknown flag: "..commandArray[i]..". Use 'help' or '--help' for usage.")
         end
         i = i + 1
     end
@@ -232,6 +252,10 @@ local function cc_execLogsCommand(chatHandler, commandArray, startIdx)
         end
     end
 
+    if filterCode ~= nil then
+        table.insert(conditions, '`status_code` = '..filterCode)
+    end
+
     local whereClause = (#conditions > 0) and (" WHERE "..table.concat(conditions, " AND ")) or ""
     local orderDir    = orderOldest and "ASC" or "DESC"
 
@@ -247,6 +271,7 @@ local function cc_execLogsCommand(chatHandler, commandArray, startIdx)
     if filterSource ~= nil then table.insert(activeFilters, "source:"..filterSource) end
     if filterTarget ~= nil then table.insert(activeFilters, "target:"..filterTarget) end
     if filterDay    ~= nil then table.insert(activeFilters, "day:"..filterDay) end
+    if filterCode   ~= nil then table.insert(activeFilters, "code:"..filterCode) end
     local filterSummary = (#activeFilters > 0) and table.concat(activeFilters, "  ") or "none"
 
     -- Header
@@ -492,7 +517,6 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         end
 
         if player == nil and ccSubCommandConsole == "logs" then
-            chatHandler:SendSysMessage("Syntax: .carboncopy logs [--source name|guid] [--target name|guid] [--day YYYY-MM-DD] [--limit N] [--oldest]")
             cc_execLogsCommand(chatHandler, commandArray, 3)
             cc_resetVariables()
             return false
@@ -714,7 +738,6 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 cc_resetVariables()
                 return false
             end
-            chatHandler:SendSysMessage("Syntax: .carboncopy logs [--source name|guid] [--target name|guid] [--day YYYY-MM-DD] [--limit N] [--oldest]")
             cc_execLogsCommand(chatHandler, commandArray, 3)
             cc_resetVariables()
             return false
