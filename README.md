@@ -33,6 +33,7 @@ There a showcase of the video "[CarbonCopy Feature](https://youtu.be/zDdODWPlbLU
 - `.carboncopy tickets lookup CharacterName` - See how many tickets a character has.
 - `.carboncopy tickets add CharacterName Amount` - Add tickets to a character's account.
 - `.carboncopy tickets remove CharacterName Amount` - Remove tickets from a character's account.
+- `.carboncopy config` or `.carboncopy settings` - Show all active CarbonCopy config values.
 - `.carboncopy logs help` or `.carboncopy logs --help` - Show logs command flags.
 - `.carboncopy logs` - Show player copy logs (newest first, limit 20).
 - `.carboncopy logs --source nameOrGuid --target nameOrGuid --day YYYY-MM-DD --code N --limit N --oldest` - Filter player copy logs.

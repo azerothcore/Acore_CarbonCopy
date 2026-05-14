@@ -162,6 +162,62 @@ local function cc_logAdmin(sourceName, sourceGuid, targetName, targetGuid, targe
     )
 end
 
+local function cc_sortedKeys(tbl)
+    local keys = {}
+    for key in pairs(tbl) do
+        table.insert(keys, key)
+    end
+
+    table.sort(keys, function(a, b)
+        local typeA = type(a)
+        local typeB = type(b)
+        if typeA == typeB then
+            if typeA == "number" then
+                return a < b
+            end
+            return tostring(a) < tostring(b)
+        end
+
+        return typeA < typeB
+    end)
+
+    return keys
+end
+
+local function cc_sendTableDump(chatHandler, title, tbl)
+    chatHandler:SendSysMessage(title)
+    for _, key in ipairs(cc_sortedKeys(tbl)) do
+        chatHandler:SendSysMessage("  ["..tostring(key).."] = "..tostring(tbl[key]))
+    end
+end
+
+local function cc_formatDisplayValue(value)
+    if type(value) ~= "string" then
+        return tostring(value)
+    end
+
+    local compact = value:gsub("%s+", " ")
+    compact = compact:gsub("^%s+", "")
+    compact = compact:gsub("%s+$", "")
+    return compact
+end
+
+local function cc_execConfigCommand(chatHandler)
+    chatHandler:SendSysMessage("===== CarbonCopy configuration =====")
+
+    for _, key in ipairs(cc_sortedKeys(Config)) do
+        local value = Config[key]
+        if type(value) ~= "table" then
+            chatHandler:SendSysMessage("  "..tostring(key).." = "..cc_formatDisplayValue(value))
+        end
+    end
+
+    cc_sendTableDump(chatHandler, "  cc_maps:", cc_maps)
+    cc_sendTableDump(chatHandler, "  ticket_Cost:", ticket_Cost)
+
+    chatHandler:SendSysMessage("===================================")
+end
+
 -- cc_execLogsCommand: shared handler for ".carboncopy logs" from console or GM.
 local function cc_execLogsCommand(chatHandler, commandArray, startIdx)
     -- Help subcommand
@@ -529,6 +585,12 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             return false
         end
 
+        if player == nil and (ccSubCommandConsole == "config" or ccSubCommandConsole == "settings") then
+            cc_execConfigCommand(chatHandler)
+            cc_resetVariables()
+            return false
+        end
+
         if player == nil then
             local reason = "This command can not be run from the console, but only from the character to copy."
             chatHandler:SendSysMessage(reason)
@@ -547,6 +609,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         -- provide syntax help
         if commandArray[2] == "help" then
             chatHandler:SendSysMessage("Syntax: .carboncopy $newCharacterName")
+            chatHandler:SendSysMessage("Syntax: .carboncopy config")
             chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
             chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
             chatHandler:SendSysMessage("Syntax: .carboncopy tickets remove $characterName $amount")
@@ -577,6 +640,18 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         end
 
         local ccSubCommand = string.lower(commandArray[2])
+        if ccSubCommand == "config" or ccSubCommand == "settings" then
+            if player:GetGMRank() < Config.minGMRankForTickets then
+                chatHandler:SendSysMessage("You lack permisisions to execute this command.")
+                cc_resetVariables()
+                return false
+            end
+
+            cc_execConfigCommand(chatHandler)
+            cc_resetVariables()
+            return false
+        end
+
         if ccSubCommand == "tickets" then
             if commandArray[3] == nil then
                 chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
