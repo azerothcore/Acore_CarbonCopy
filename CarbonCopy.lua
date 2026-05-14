@@ -1047,7 +1047,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         local QueryString
         QueryString = 'UPDATE `characters` AS t1 '
         QueryString = QueryString..'INNER JOIN `characters` AS t2 ON t2.guid = '..cc_playerGUID..' '
-        QueryString = QueryString..'SET t1.level = t2.level, t1.xp = t2.xp, t1.taximask = t2.taximask, t1.totaltime = t2.totaltime, '
+        QueryString = QueryString..'SET t1.level = t2.level, t1.xp = t2.xp, t1.taximask = t2.taximask, '
         QueryString = QueryString..'t1.leveltime = t2.leveltime, t1.stable_slots = t2.stable_slots, t1.health = t2.health, '
         QueryString = QueryString..'t1.power1 = t2.power1, t1.power2 = t2.power2, t1.power3 = t2.power3, t1.power4 = t2.power4, '
         QueryString = QueryString..'t1.power5 = t2.power5, t1.power6 = t2.power6, t1.power7 = t2.power7, t1.talentGroupsCount = t2.talentGroupsCount, '
@@ -1056,6 +1056,14 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         QueryString = nil
         Data_SQL = nil
         local Data_SQL = CharDBQuery('UPDATE characters SET cinematic = 1 WHERE guid = '..cc_newCharacter..';');
+
+        coroutine.yield()
+        -- Copy achivements level ups 10, 20, 30, 40, 50, 60, 70 or 80 if they exist and use carboncopy sucess timestamp when it was "obtained".
+        local level_achievements = {6, 7, 8, 9, 10, 11, 12, 13}
+        local achievement_list = table.concat(level_achievements, ",")
+        local Data_SQL = CharDBQuery('DELETE FROM character_achievement WHERE guid = '..cc_newCharacter..' AND achievement IN ('..achievement_list..');')
+        local Data_SQL = CharDBQuery('INSERT INTO character_achievement (guid, achievement, date) SELECT '..cc_newCharacter..', achievement, UNIX_TIMESTAMP() FROM character_achievement WHERE guid = '..cc_playerGUID..' AND achievement IN ('..achievement_list..');')
+        Data_SQL = nil
 
         coroutine.yield()
         -- Copy character_homebind
@@ -1268,6 +1276,10 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         end
         CreateLuaEvent(cc_fixItems, 3000) -- do it after 3 seconds
         cc_deleteTempTables(cc_playerGUID)
+
+        cc_chatHandler:SendSysMessage("Character copy complete! The character "..targetName.." has been successfully copied.")
+        cc_logPlayer(sourceName, sourceGuid, targetName, cc_newCharacter, player:GetLevel(), oldTickets - 1, oldTickets, CC_STATUS_SUCCESS, "Character copied")
+
         cc_resetVariables()
 
         return false
