@@ -33,14 +33,40 @@ There a showcase of the video "[CarbonCopy Feature](https://youtu.be/zDdODWPlbLU
 - `.carboncopy tickets lookup CharacterName` - See how many tickets a character has.
 - `.carboncopy tickets add CharacterName Amount` - Add tickets to a character's account.
 - `.carboncopy tickets remove CharacterName Amount` - Remove tickets from a character's account.
+- `.carboncopy config` or `.carboncopy settings` - Show all active CarbonCopy config values.
+- `.carboncopy logs help` or `.carboncopy logs --help` - Show logs command flags.
+- `.carboncopy logs` - Show player copy logs (newest first, limit 20).
+- `.carboncopy logs --source nameOrGuid --target nameOrGuid --day YYYY-MM-DD --code N --limit N --oldest` - Filter player copy logs.
 - `.addcctickets help` - [Kept for: Legacy/Compatibility]
 - `.addcctickets CharacterName Amount`- [Kept for: Legacy/Compatibility] Add tickets to a character's account.
 - `CCACCOUNTTICKETS accountName amount` - Used by [SOAP](https://www.azerothcore.org/wiki/remote-access#soap) for [acore-cms](https://github.com/azerothcore/acore-cms).
+
+### Logs Command Flags
+
+All flags are optional and can be combined:
+
+- `--source name|guid` - Filter by source character name or GUID.
+- `--target name|guid` - Filter by target character name or GUID.
+- `--day YYYY-MM-DD` - Show entries from this date only.
+- `--code N` - Filter by status code (`0=free ticket`, `1=success`, `2=failed`).
+- `--limit N` - Max rows returned (`1-100`, default `20`).
+- `--oldest` - Sort oldest first (default is newest first).
+
+Output format:
+
+- `YYYY-MM-DD HH:MM | source_name (GUID: source_guid) [lvX] | target_name (GUID: target_guid) | tickets | reason (Code: N)`
+- If target is empty, the target section is omitted.
+- Tickets are shown as `before => after` when changed, or just a single number when unchanged.
 
 ## Configuration
 
 ```
 customDbName = "ac_eluna" -- Name of the database schema used for CarbonCopy data.
+carboncopyTableName = "carboncopy" -- Main ticket table name.
+playerLogsTableName = "carboncopy_player_logs" -- Player logs table name.
+adminLogsTableName = "carboncopy_admin_logs" -- Admin logs table name.
+enablePlayerLogs = true -- Enable inserts into player logs table.
+enableAdminLogs = true -- Enable inserts into admin logs table.
 minGMRankForCopy = 0 -- Minimum GM rank required to use .carboncopy.
 minGMRankForTickets = 2 -- Minimum GM rank required to add or remove tickets.
 freeTickets = 4 -- Tickets granted when an account uses CarbonCopy for the first time.
@@ -74,6 +100,9 @@ You need to grant account related tickets in the `carboncopy` table:
 - `tickets` is the number of times an account can copy a character.
 - `allow_copy_from_id` is reserved for future use.
 
+If `enablePlayerLogs` is true, player copy attempts are recorded in `playerLogsTableName`.
+If `enableAdminLogs` is true, GM/console ticket actions are recorded in `adminLogsTableName`.
+
 You can also grant tickets from console or SOAP:
 - `CCACCOUNTTICKETS accountName amount`
 
@@ -88,7 +117,7 @@ You can grant or remove tickets in game (default restriction: GM rank 2+):
 
 **Optional settings**
 - `keepStartingItems`: When `true`, the target character keeps existing starter/equipped items. When `false`, all target items except Hearthstone are deleted before copied gear is mailed.
-- `copyEquipmentSets`: When `true`, Equipment Manager sets are copied and remapped to the new mailed item GUIDs. This requires the in-game "Use Equipment Manager" feature to be enabled.
+- `copyEquipmentSets`: When `true`, Equipment Manager sets are copied and remapped to the new mailed item GUIDs. This requires the in-game "Use Equipment Manager" feature to be enabled. **Design note:** Only currently equipped items are included in equipment set copying to minimize server queries and load. This means equipment sets will only contain properly remapped items for gear that was actively equipped. Any set slots that referenced non-equipped items will show as empty (0) in the copied set.
 
 ## Copy Workflow
 
