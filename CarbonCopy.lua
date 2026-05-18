@@ -1027,7 +1027,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             chatHandler:SendSysMessage(localizedStayMsg)
         end
 
-        cc_eventId = CreateLuaEvent(cc_resumeSubRoutine, 1000, 10)
+        cc_eventId = CreateLuaEvent(cc_resumeSubRoutine, 1000, 11)
 
         cc_subRoutine = coroutine.create(function ()
 
