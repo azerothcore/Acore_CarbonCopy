@@ -397,15 +397,15 @@ function cc_CopyCharacter(event, player, command, chatHandler)
     local sourceName = player and player:GetName() or "console"
     local sourceGuid = player and tonumber(tostring(player:GetGUID())) or nil
     if commandArray[2] ~= nil then
-        commandArray[2] = commandArray[2]:gsub("[';\\, ]", "")
+        commandArray[2] = commandArray[2]:gsub("[\"';\\, ]", "")
         if commandArray[3] ~= nil then
-            commandArray[3] = commandArray[3]:gsub("[';\\, ]", "")
+            commandArray[3] = commandArray[3]:gsub("[\"';\\, ]", "")
         end
         if commandArray[4] ~= nil then
-            commandArray[4] = commandArray[4]:gsub("[';\\, ]", "")
+            commandArray[4] = commandArray[4]:gsub("[\"';\\, ]", "")
         end
         if commandArray[5] ~= nil then
-            commandArray[5] = commandArray[5]:gsub("[';\\, ]", "")
+            commandArray[5] = commandArray[5]:gsub("[\"';\\, ]", "")
         end
     end
 
@@ -453,7 +453,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 end
 
                 local normalisedCharacterName = cc_normalizeCharacterName(commandArray[4])
-                local Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..normalisedCharacterName.."' LIMIT 1;")
+                local Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = "..cc_sqlQuote(normalisedCharacterName).." LIMIT 1;")
                 local accountId
                 local oldTickets
                 if Data_SQL ~= nil then
@@ -503,7 +503,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 end
 
                 local normalisedCharacterName = cc_normalizeCharacterName(commandArray[4])
-                local Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..normalisedCharacterName.."' LIMIT 1;")
+                local Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = "..cc_sqlQuote(normalisedCharacterName).." LIMIT 1;")
                 local accountId
                 local oldTickets
                 if Data_SQL ~= nil then
@@ -555,7 +555,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             end
 
             local lookupCharacterName = cc_normalizeCharacterName(lookupNameArg)
-            local Data_SQL = CharDBQuery('SELECT `account` FROM `characters` WHERE `name` = "'..lookupCharacterName..'" LIMIT 1;')
+            local Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = "..cc_sqlQuote(lookupCharacterName).." LIMIT 1;")
             if Data_SQL == nil then
                 local reason = "Character name not found. Check spelling."
                 chatHandler:SendSysMessage(reason)
@@ -682,7 +682,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 end
 
                 local normalisedCharacterName = cc_normalizeCharacterName(commandArray[4])
-                local Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..normalisedCharacterName.."' LIMIT 1;")
+                local Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = "..cc_sqlQuote(normalisedCharacterName).." LIMIT 1;")
                 local addAccountId
                 local oldTickets
                 if Data_SQL ~= nil then
@@ -738,7 +738,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 end
 
                 local normalisedCharacterName = cc_normalizeCharacterName(commandArray[4])
-                local Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..normalisedCharacterName.."' LIMIT 1;")
+                local Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = "..cc_sqlQuote(normalisedCharacterName).." LIMIT 1;")
                 local removeAccountId
                 local oldTickets
                 if Data_SQL ~= nil then
@@ -790,7 +790,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             end
 
             local lookupCharacterName = cc_normalizeCharacterName(lookupNameArg)
-            local Data_SQL = CharDBQuery('SELECT `account` FROM `characters` WHERE `name` = "'..lookupCharacterName..'" LIMIT 1;')
+            local Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = "..cc_sqlQuote(lookupCharacterName).." LIMIT 1;")
             if Data_SQL == nil then
                 local reason = "Character name not found. Check spelling."
                 chatHandler:SendSysMessage(reason)
@@ -839,7 +839,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         local targetName = cc_normalizeCharacterName(commandArray[2])
 
         --check for target character to be on same account
-        local Data_SQL = CharDBQuery('SELECT `account` FROM `characters` WHERE `name` = "'..targetName..'" LIMIT 1;');
+        local Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = "..cc_sqlQuote(targetName).." LIMIT 1;");
         if Data_SQL == nil then
             local reason = "Name not found. Check spelling. Aborting."
             chatHandler:SendSysMessage(reason)
@@ -857,7 +857,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             return false
         end
 
-        local Data_SQL = CharDBQuery('SELECT `guid` FROM `characters` WHERE `name` = "'..targetName..'" LIMIT 1;');
+        local Data_SQL = CharDBQuery("SELECT `guid` FROM `characters` WHERE `name` = "..cc_sqlQuote(targetName).." LIMIT 1;");
         local newCharacter
         if Data_SQL ~= nil then
             newCharacter = Data_SQL:GetUInt32(0)
@@ -1315,7 +1315,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             end
 
             local normalisedCharacterName = cc_normalizeCharacterName(commandArray[2])
-            Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..normalisedCharacterName.."' LIMIT 1;");
+            Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = "..cc_sqlQuote(normalisedCharacterName).." LIMIT 1;");
             if Data_SQL ~= nil then
                 accountId = Data_SQL:GetUInt32(0)
             else
@@ -1368,7 +1368,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             end
 
             local normalisedCharacterName = cc_normalizeCharacterName(commandArray[2])
-            Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = '"..normalisedCharacterName.."' LIMIT 1;");
+            Data_SQL = CharDBQuery("SELECT `account` FROM `characters` WHERE `name` = "..cc_sqlQuote(normalisedCharacterName).." LIMIT 1;");
             if Data_SQL ~= nil then
                 accountId = Data_SQL:GetUInt32(0)
             else
@@ -1405,7 +1405,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
     -- command for SOAP interface to send to worldserver console, granting tickets. Syntax: CCACCOUNTTICKETS $accountName $amount
     elseif commandArray[1] == "CCACCOUNTTICKETS" and commandArray[2] ~= nil and commandArray[3] ~= nil and player == nil then
         local Data_SQL
-        Data_SQL = AuthDBQuery('SELECT `id` FROM `account` WHERE `username` = "'..commandArray[2]..'";')
+        Data_SQL = AuthDBQuery("SELECT `id` FROM `account` WHERE `username` = "..cc_sqlQuote(commandArray[2])..";")
         if Data_SQL == nil then
             PrintError("CCACCOUNTTICKETS to "..commandArray[2].." has failed.")
             cc_logAdmin("console", nil, commandArray[2], nil, nil, CC_ACTION_GM_ADD, nil, nil, CC_STATUS_FAILED, "CCACCOUNTTICKETS account not found")
