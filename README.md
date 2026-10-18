@@ -23,12 +23,12 @@ There a showcase of the video "[CarbonCopy Feature](https://youtu.be/zDdODWPlbLU
 
 ## Player Usage:
 
-- `.carboncopy help`
 - `.carboncopy` - Show your current tickets (to be used in-game.)
 - `.carboncopy $newCharacterName` - To Start Carbon Copy to given character name.
 
 ## Adminstrator Usage:
 
+- `.carboncopy help` - List all CarbonCopy commands (requires `minGMRankForTickets`).
 - `.carboncopy tickets help`
 - `.carboncopy tickets lookup CharacterName` - See how many tickets a character has.
 - `.carboncopy tickets add CharacterName Amount` - Add tickets to a character's account.

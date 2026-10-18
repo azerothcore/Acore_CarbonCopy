@@ -391,6 +391,190 @@ local function cc_execLogsCommand(chatHandler, commandArray, startIdx)
     chatHandler:SendSysMessage("============================================")
 end
 
+-- Player-facing texts for .carboncopy (no arguments), per client locale.
+-- Locale IDs from player:GetDbcLocale(): 0=enUS 1=koKR 2=frFR 3=deDE 4=zhCN 5=zhTW 6=esES 7=esMX 8=ruRU
+-- [0] (English) is used when a locale has no translation.
+local cc_infoText = {
+    TICKETS = {
+        [0] = "You currently have %d tickets available for CarbonCopy.",
+        [1] = "현재 CarbonCopy 티켓이 %d개 있습니다.",
+        [2] = "Vous disposez actuellement de %d tickets CarbonCopy.",
+        [3] = "Du hast derzeit %d CarbonCopy-Tickets.",
+        [4] = "你当前拥有 %d 张 CarbonCopy 票券。",
+        [5] = "你目前擁有 %d 張 CarbonCopy 票券。",
+        [6] = "Actualmente tienes %d tickets de CarbonCopy.",
+        [7] = "Actualmente tienes %d tickets de CarbonCopy.",
+        [8] = "У вас %d жетонов CarbonCopy.",
+    },
+    USAGE = {
+        [0] = "To copy this character: create a new character of the same race and class on this account (do NOT log it in), then type .carboncopy NewCharacterName while logged in on this character. You will be prompted when you can log in.",
+        [1] = "이 캐릭터를 복사하려면: 같은 계정에 같은 종족과 직업의 새 캐릭터를 만드세요 (접속하지 마세요). 그다음 이 캐릭터로 접속한 상태에서 .carboncopy 새캐릭터이름 을 입력하세요. 접속해도 될 때 안내 메시지가 표시됩니다.",
+        [2] = "Pour copier ce personnage : créez un nouveau personnage de même race et classe sur ce compte (ne vous connectez PAS avec), puis tapez .carboncopy NomDuNouveauPersonnage en étant connecté sur ce personnage. Un message vous indiquera quand vous pourrez vous connecter.",
+        [3] = "So kopierst du diesen Charakter: Erstelle auf diesem Account einen neuen Charakter mit gleicher Rasse und Klasse (NICHT einloggen), dann tippe .carboncopy NeuerCharakterName, während du mit diesem Charakter eingeloggt bist. Du wirst benachrichtigt, sobald du dich einloggen kannst.",
+        [4] = "复制此角色：在本账号创建一个相同种族和职业的新角色（不要登录它），然后在此角色登录时输入 .carboncopy 新角色名。可以登录时会提示你。",
+        [5] = "複製此角色：在本帳號建立一個相同種族和職業的新角色（不要登入它），然後在此角色登入時輸入 .carboncopy 新角色名稱。可以登入時會提示你。",
+        [6] = "Para copiar este personaje: crea un personaje nuevo de la misma raza y clase en esta cuenta (NO entres con él) y escribe .carboncopy NombreNuevoPersonaje mientras estás conectado con este personaje. Se te avisará cuando puedas conectarte.",
+        [7] = "Para copiar este personaje: crea un personaje nuevo de la misma raza y clase en esta cuenta (NO entres con él) y escribe .carboncopy NombreNuevoPersonaje mientras estás conectado con este personaje. Se te avisará cuando puedas conectarte.",
+        [8] = "Чтобы скопировать этого персонажа: создайте на этом аккаунте нового персонажа той же расы и класса (НЕ заходите им), затем введите .carboncopy ИмяНовогоПерсонажа, находясь в игре этим персонажем. Вам сообщат, когда можно будет войти.",
+    },
+    ELIGIBLE = {
+        [0] = "This character (level %d) can be copied for %d ticket(s).",
+        [1] = "이 캐릭터(레벨 %d)는 티켓 %d개로 복사할 수 있습니다.",
+        [2] = "Ce personnage (niveau %d) peut être copié pour %d ticket(s).",
+        [3] = "Dieser Charakter (Stufe %d) kann für %d Ticket(s) kopiert werden.",
+        [4] = "此角色（%d 级）可以用 %d 张票券复制。",
+        [5] = "此角色（%d 級）可以用 %d 張票券複製。",
+        [6] = "Este personaje (nivel %d) se puede copiar por %d ticket(s).",
+        [7] = "Este personaje (nivel %d) se puede copiar por %d ticket(s).",
+        [8] = "Этого персонажа (уровень %d) можно скопировать за %d жетон(ов).",
+    },
+    NOT_ENOUGH_TICKETS = {
+        [0] = "This character (level %d) needs %d ticket(s) to be copied, but you only have %d.",
+        [1] = "이 캐릭터(레벨 %d)를 복사하려면 티켓 %d개가 필요하지만 %d개만 있습니다.",
+        [2] = "Ce personnage (niveau %d) nécessite %d ticket(s) pour être copié, mais vous n'en avez que %d.",
+        [3] = "Dieser Charakter (Stufe %d) braucht %d Ticket(s) zum Kopieren, du hast aber nur %d.",
+        [4] = "复制此角色（%d 级）需要 %d 张票券，但你只有 %d 张。",
+        [5] = "複製此角色（%d 級）需要 %d 張票券，但你只有 %d 張。",
+        [6] = "Este personaje (nivel %d) necesita %d ticket(s) para copiarse, pero solo tienes %d.",
+        [7] = "Este personaje (nivel %d) necesita %d ticket(s) para copiarse, pero solo tienes %d.",
+        [8] = "Для копирования этого персонажа (уровень %d) нужно %d жетон(ов), а у вас только %d.",
+    },
+    LEVEL_TOO_HIGH = {
+        [0] = "This character can't be copied: level %d is above the maximum level %d.",
+        [1] = "이 캐릭터는 복사할 수 없습니다: 레벨 %d은(는) 최대 레벨 %d보다 높습니다.",
+        [2] = "Ce personnage ne peut pas être copié : le niveau %d dépasse le niveau maximum %d.",
+        [3] = "Dieser Charakter kann nicht kopiert werden: Stufe %d liegt über der Höchststufe %d.",
+        [4] = "此角色无法复制：%d 级超过了最高等级 %d。",
+        [5] = "此角色無法複製：%d 級超過了最高等級 %d。",
+        [6] = "Este personaje no se puede copiar: el nivel %d supera el nivel máximo %d.",
+        [7] = "Este personaje no se puede copiar: el nivel %d supera el nivel máximo %d.",
+        [8] = "Этого персонажа нельзя скопировать: уровень %d выше максимального уровня %d.",
+    },
+    WRONG_MAP = {
+        [0] = "You can only copy outside of dungeons, raids, battlegrounds and arenas.",
+        [1] = "던전, 공격대, 전장, 투기장 밖에서만 복사할 수 있습니다.",
+        [2] = "Vous ne pouvez copier qu'en dehors des donjons, raids, champs de bataille et arènes.",
+        [3] = "Kopieren ist nur außerhalb von Dungeons, Schlachtzügen, Schlachtfeldern und Arenen möglich.",
+        [4] = "只能在地下城、团队副本、战场和竞技场之外复制。",
+        [5] = "只能在地城、團隊副本、戰場和競技場之外複製。",
+        [6] = "Solo puedes copiar fuera de mazmorras, bandas, campos de batalla y arenas.",
+        [7] = "Solo puedes copiar fuera de mazmorras, bandas, campos de batalla y arenas.",
+        [8] = "Копировать можно только вне подземелий, рейдов, полей боя и арен.",
+    },
+    COSTS_HEADER = {
+        [0] = "Ticket costs:",
+        [1] = "티켓 비용:",
+        [2] = "Coût en tickets :",
+        [3] = "Ticketkosten:",
+        [4] = "票券花费：",
+        [5] = "票券花費：",
+        [6] = "Coste en tickets:",
+        [7] = "Costo en tickets:",
+        [8] = "Стоимость в жетонах:",
+    },
+    COST_RANGE = {
+        [0] = "  Level %d - %d = %d ticket(s)",
+        [1] = "  레벨 %d - %d = 티켓 %d개",
+        [2] = "  Niveau %d - %d = %d ticket(s)",
+        [3] = "  Stufe %d - %d = %d Ticket(s)",
+        [4] = "  %d - %d 级 = %d 张票券",
+        [5] = "  %d - %d 級 = %d 張票券",
+        [6] = "  Nivel %d - %d = %d ticket(s)",
+        [7] = "  Nivel %d - %d = %d ticket(s)",
+        [8] = "  Уровень %d - %d = %d жетон(ов)",
+    },
+    COST_LEVEL = {
+        [0] = "  Level %d = %d ticket(s)",
+        [1] = "  레벨 %d = 티켓 %d개",
+        [2] = "  Niveau %d = %d ticket(s)",
+        [3] = "  Stufe %d = %d Ticket(s)",
+        [4] = "  %d 级 = %d 张票券",
+        [5] = "  %d 級 = %d 張票券",
+        [6] = "  Nivel %d = %d ticket(s)",
+        [7] = "  Nivel %d = %d ticket(s)",
+        [8] = "  Уровень %d = %d жетон(ов)",
+    },
+    COST_SINGLE = {
+        [0] = "  Every copy = 1 ticket",
+        [1] = "  복사 1회 = 티켓 1개",
+        [2] = "  Chaque copie = 1 ticket",
+        [3] = "  Jede Kopie = 1 Ticket",
+        [4] = "  每次复制 = 1 张票券",
+        [5] = "  每次複製 = 1 張票券",
+        [6] = "  Cada copia = 1 ticket",
+        [7] = "  Cada copia = 1 ticket",
+        [8] = "  Каждое копирование = 1 жетон",
+    },
+    STARTER_TICKETS = {
+        [0] = "Starter tickets = %d",
+        [1] = "기본 지급 티켓 = %d",
+        [2] = "Tickets de départ = %d",
+        [3] = "Starttickets = %d",
+        [4] = "初始票券 = %d",
+        [5] = "初始票券 = %d",
+        [6] = "Tickets iniciales = %d",
+        [7] = "Tickets iniciales = %d",
+        [8] = "Стартовые жетоны = %d",
+    },
+}
+
+-- Picks the text for the player's client locale (English if missing) and fills in the values.
+local function cc_info(player, key, ...)
+    local entry = cc_infoText[key]
+    local text = entry[player and player:GetDbcLocale() or 0] or entry[0]
+    if select('#', ...) > 0 then
+        return string.format(text, ...)
+    end
+    return text
+end
+
+-- Ticket cost to copy a character of this level, or nil if no ticket_Cost bracket covers it.
+local function cc_ticketCostForLevel(level)
+    if Config.ticketCost == "single" then
+        return 1
+    end
+    local highest = 0
+    for bracket in pairs(ticket_Cost) do
+        if bracket > highest then
+            highest = bracket
+        end
+    end
+    for n = level, highest do
+        if ticket_Cost[n] ~= nil then
+            return ticket_Cost[n]
+        end
+    end
+    return nil
+end
+
+-- Sends the ticket cost per level (only levels that can be copied) and the starter tickets.
+local function cc_sendTicketCosts(player, chatHandler)
+    chatHandler:SendSysMessage(cc_info(player, "COSTS_HEADER"))
+    if Config.ticketCost == "single" then
+        chatHandler:SendSysMessage(cc_info(player, "COST_SINGLE"))
+    else
+        local brackets = {}
+        for bracket in pairs(ticket_Cost) do
+            table.insert(brackets, bracket)
+        end
+        table.sort(brackets)
+        local from = 1
+        for _, to in ipairs(brackets) do
+            if from > Config.maxLevel then
+                break
+            end
+            local upTo = math.min(to, Config.maxLevel)
+            if from == upTo then
+                chatHandler:SendSysMessage(cc_info(player, "COST_LEVEL", from, ticket_Cost[to]))
+            else
+                chatHandler:SendSysMessage(cc_info(player, "COST_RANGE", from, upTo, ticket_Cost[to]))
+            end
+            from = to + 1
+        end
+    end
+    chatHandler:SendSysMessage(cc_info(player, "STARTER_TICKETS", Config.freeTickets))
+end
+
 function cc_CopyCharacter(event, player, command, chatHandler)
 
     local commandArray = cc_splitString(command)
@@ -591,6 +775,20 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             return false
         end
 
+        -- console / SOAP: list the commands that work from here
+        if player == nil and (ccSubCommandConsole == "help" or ccSubCommandConsole == "--help") then
+            chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
+            chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
+            chatHandler:SendSysMessage("Syntax: .carboncopy tickets remove $characterName $amount")
+            chatHandler:SendSysMessage("Syntax: .carboncopy config")
+            chatHandler:SendSysMessage("Syntax: .carboncopy logs [--source name|guid] [--target name|guid] [--day YYYY-MM-DD] [--code N] [--limit N] [--oldest]")
+            chatHandler:SendSysMessage("Syntax: .addcctickets $characterName $amount") -- Kept for Legacy / Compatibility
+            chatHandler:SendSysMessage("Syntax: CCACCOUNTTICKETS $accountName $amount")
+            chatHandler:SendSysMessage(".carboncopy $newCharacterName can only be run in game, from the character to copy.")
+            cc_resetVariables()
+            return false
+        end
+
         if player == nil then
             local reason = "This command can not be run from the console, but only from the character to copy."
             chatHandler:SendSysMessage(reason)
@@ -606,8 +804,13 @@ function cc_CopyCharacter(event, player, command, chatHandler)
             return false
         end
 
-        -- provide syntax help
+        -- provide syntax help (GM only, it lists the GM ticket/config/logs commands)
         if commandArray[2] == "help" then
+            if player:GetGMRank() < Config.minGMRankForTickets then
+                chatHandler:SendSysMessage("You lack permisisions to execute this command.")
+                cc_resetVariables()
+                return false
+            end
             chatHandler:SendSysMessage("Syntax: .carboncopy $newCharacterName")
             chatHandler:SendSysMessage("Syntax: .carboncopy config")
             chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
@@ -634,7 +837,25 @@ function cc_CopyCharacter(event, player, command, chatHandler)
                 CharDBExecute('REPLACE INTO `'..Config.customDbName..'`.`'..cc_carboncopyTable..'` VALUES ('..accountId..', '..Config.freeTickets..', 0) ;')
                 cc_logPlayer(sourceName, sourceGuid, nil, nil, player:GetLevel(), 0, Config.freeTickets, CC_STATUS_FREE_CONFIG_TICKET, "Free config ticket granted")
             end
-            chatHandler:SendSysMessage("You currently have "..oldTickets.." tickets available for CarbonCopy.")
+            -- ticket cost list and map warning first, the most important lines last
+            -- (closest to the chat input): balance, how to use it, and whether this character can be copied
+            cc_sendTicketCosts(player, chatHandler)
+            if not cc_has_value(cc_maps, player:GetMapId()) then
+                chatHandler:SendSysMessage(cc_info(player, "WRONG_MAP"))
+            end
+
+            chatHandler:SendSysMessage(cc_info(player, "TICKETS", oldTickets))
+            chatHandler:SendSysMessage(cc_info(player, "USAGE"))
+            local level = player:GetLevel()
+            local cost = cc_ticketCostForLevel(level)
+            if level > Config.maxLevel or cost == nil then
+                chatHandler:SendSysMessage(cc_info(player, "LEVEL_TOO_HIGH", level, Config.maxLevel))
+            elseif oldTickets < cost then
+                chatHandler:SendSysMessage(cc_info(player, "NOT_ENOUGH_TICKETS", level, cost, oldTickets))
+            else
+                chatHandler:SendSysMessage(cc_info(player, "ELIGIBLE", level, cost))
+            end
+
             cc_resetVariables()
             return false
         end
@@ -653,6 +874,13 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         end
 
         if ccSubCommand == "tickets" then
+            -- every tickets action (lookup / add / remove / syntax) is GM only
+            if player:GetGMRank() < Config.minGMRankForTickets then
+                chatHandler:SendSysMessage("You lack permisisions to execute this command.")
+                cc_resetVariables()
+                return false
+            end
+
             if commandArray[3] == nil then
                 chatHandler:SendSysMessage("Syntax: .carboncopy tickets lookup $characterName")
                 chatHandler:SendSysMessage("Syntax: .carboncopy tickets add $characterName $amount")
@@ -1440,7 +1668,7 @@ function cc_CopyCharacter(event, player, command, chatHandler)
         cc_resetVariables()
         return false
     elseif player ~= nil then
-        chatHandler:SendSysMessage("'CCACCOUNTTICKETS $accountName $amount' only works against SOAP / the console.")
+        -- CCACCOUNTTICKETS is SOAP / console only: stay silent for players, like .addcctickets
         return false
     else
         chatHandler:SendSysMessage("Syntax: CCACCOUNTTICKETS $accountName $amount")
