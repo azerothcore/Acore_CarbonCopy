@@ -1,154 +1,173 @@
 # Acore_CarbonCopy
 
-It's a Lua script made for [AzerothCore](https://github.com/azerothcore/azerothcore-wotlk) to allow players to make copies of their characters at specific level of their choosing, an example allowing to have a PVP Twink.
+A Lua script for [AzerothCore](https://github.com/azerothcore/azerothcore-wotlk) that lets players copy a character's progress onto a new character on the same account, at a level of their choosing - for example to make a PvP twink.
 
 > [!NOTE]
-> This script delays the copy process and splits it into 10 pieces to reduce core / server lag.
-
+> The copy runs in small steps, one per second, to avoid lag on the server.
 
 **Proudly hosted on [ChromieCraft](https://www.chromiecraft.com/)**
 #### Find me on patreon: https://www.patreon.com/Honeys
 
-There a showcase of the video "[CarbonCopy Feature](https://youtu.be/zDdODWPlbLU?si=vCL9TL34lXSCRklB&t=72)".
+There is a showcase in the video "[CarbonCopy Feature](https://youtu.be/zDdODWPlbLU?si=vCL9TL34lXSCRklB&t=72)".
 
-## Requirements:
+## Requirements
 
-- Requires [mod-ale](https://github.com/azerothcore/mod-ale) (**A**zerothCore **L**ua **E**ngine) to work.
+- [mod-ale](https://github.com/azerothcore/mod-ale) (**A**zerothCore **L**ua **E**ngine).
+- With the default `lua_scripts` folder, `mod_ale.conf` needs `ALE.ScriptPath = "lua_scripts"`; otherwise adjust the path.
+- Keep `CarbonCopy.lua`, `CarbonCopy_Config.lua` and `CarbonCopy_Locale.lua` together in one folder.
+- Settings are in `CarbonCopy_Config.lua`. After changing it, run `.reload ale` (console, or an administrator in game).
+- The database (`Config.customDbName`, default `ac_eluna`) and every table are created and upgraded automatically.
 
-- If you're using the default `lua_scripts` folder than your `mod_ale.conf` should have `ALE.ScriptPath = "lua_scripts"`, otherwise adjust the path accordingly.
+## Player usage
 
-- Requires setup of `CarbonCopy_Config.lua` file if you wish to change the values. (`.reload ale` will update the server with the configuration of the file related to the `CarbonCopy` script.)
+- `.carboncopy` - show your tickets, the cost per level, and whether you can copy from where you are.
+- `.carboncopy $newCharacterName` - copy the character you are logged in with to `$newCharacterName`.
 
-- Adjust `local CarbonCopyConfig = require("CarbonCopy_Config")` of your `CarbonCopy.lua` to match the path of your configuration, by default these two files `CarbonCopy.lua` and `CarbonCopy_Config.lua` should be in the same place.
+### Copy workflow
 
-## Player Usage:
+1. Create a new character with the **same race and class**, on the **same account**. Do **not** log it in.
+2. Log in with the character to copy, on one of the allowed maps (`cc_maps`, by default the four continents).
+3. Type `.carboncopy $newCharacterName`.
+4. **Stay logged in** until the "copy complete" message appears (a few seconds to a minute). The new character is locked while it is being copied.
+5. Log in with the new character and collect the items from the mailbox. Enchants and gems are already on them.
 
-- `.carboncopy` - Show your current tickets (to be used in-game.)
-- `.carboncopy $newCharacterName` - To Start Carbon Copy to given character name.
+If a copy fails before anything was mailed, the tickets are refunded and the new character stays locked until a copy to it succeeds. You can simply run the copy again. If it fails after the items were mailed, the player is asked to contact a GM, who can use `restore`.
 
-## Adminstrator Usage:
+## What it copies
 
-- `.carboncopy help` - List all CarbonCopy commands (requires `minGMRankForTickets`).
-- `.carboncopy tickets help`
-- `.carboncopy tickets lookup CharacterName` - See how many tickets a character has.
-- `.carboncopy tickets add CharacterName Amount` - Add tickets to a character's account.
-- `.carboncopy tickets remove CharacterName Amount` - Remove tickets from a character's account.
-- `.carboncopy config` or `.carboncopy settings` - Show all active CarbonCopy config values.
-- `.carboncopy logs help` or `.carboncopy logs --help` - Show logs command flags.
-- `.carboncopy logs` - Show player copy logs (newest first, limit 20).
-- `.carboncopy logs --source nameOrGuid --target nameOrGuid --day YYYY-MM-DD --code N --limit N --oldest` - Filter player copy logs.
-- `.addcctickets help` - [Kept for: Legacy/Compatibility]
-- `.addcctickets CharacterName Amount`- [Kept for: Legacy/Compatibility] Add tickets to a character's account.
-- `CCACCOUNTTICKETS accountName amount` - Used by [SOAP](https://www.azerothcore.org/wiki/remote-access#soap) for [acore-cms](https://github.com/azerothcore/acore-cms).
+- Level, XP, played time, discovered flight paths, explored zones, health / power, bought stable slots.
+- The talent setup with both specs (the active spec stays active), glyphs, spells, and skills including professions.
+- Completed quests and reputation.
+- The action bars.
+- The level achievements (level 10, 20, ... 80) the source character has.
+- The Hearthstone bind point, only with `homebindToCapital = false` (by default the new character is bound to its faction's capital). If the copied one isn't valid, the capital is used.
+- Every equipped item, by mail, with enchants, gems and random suffix. With `makeCopySoulbounded = true` the copies are soulbound.
+- A Hearthstone, if the new character doesn't have one.
+- Hunters: one pet with its spells - the active pet first, otherwise a dismissed or stabled one.
+- Shamans: the totems the source character owns, in their own mail.
+- Equipment Manager sets, when `copyEquipmentSets = true` (only gear that was equipped).
 
-### Logs Command Flags
+By default (each can be turned off):
+- the new character starts in its faction's capital (`teleportToCapital`) and is bound there (`homebindToCapital`)
+- its talents are reset at first login so the player spends them again (`resetTalentsAfterCopy`, glyphs are kept).
 
-All flags are optional and can be combined:
+## What it does not copy
 
-- `--source name|guid` - Filter by source character name or GUID.
-- `--target name|guid` - Filter by target character name or GUID.
-- `--day YYYY-MM-DD` - Show entries from this date only.
-- `--code N` - Filter by status code (`0=free ticket`, `1=success`, `2=failed`).
-- `--limit N` - Max rows returned (`1-100`, default `20`).
-- `--oldest` - Sort oldest first (default is newest first).
+- Items in bags and the bank, and the bags themselves.
+- Gold (the new character starts with 0 copper).
+- Achievements other than the level ones.
+- Macros. Copy the character's folder in the client's `WTF` folder for those.
 
-Output format:
+## Tickets
 
-- `YYYY-MM-DD HH:MM | source_name (GUID: source_guid) [lvX] | target_name (GUID: target_guid) | tickets | reason (Code: N)`
-- If target is empty, the target section is omitted.
-- Tickets are shown as `before => after` when changed, or just a single number when unchanged.
+Every copy costs tickets: 1 with `ticketCost = "single"`, or by level with `ticketCost = "level"` (the `ticket_Cost` brackets).
+
+- **Starter tickets:** an account gets `freeTickets` once, the first time it creates a character or logs in.
+- **Adding tickets:** GMs, the console and the website add tickets on top of the current balance. A balance can't go above 1000.
+- **Realms:** every balance lists the realms it is valid on (the `realm_ids` column): `-1` for all realms, `1`, or `1 2` for one balance shared by realms 1 and 2. A worldserver uses the account's balance whose list contains its own realm id.
+- **`ticketRealms`:** this setting is only the list a new balance gets. It must include the realm itself, or be `-1`.
+- **Changing realms later:** use `.carboncopy tickets move`, which changes the list of existing balances in place and merges balances where needed.
+
+## Administrator usage
+
+Ranks: tickets, `config` and `logs` need `minGMRankForTickets`; `restore`, `revoke` and `cleanup` need `minGMRankForRestore`. Everything except copying also works from the console.
+
+Wherever a command takes `$characterName`, you can also write `--character $characterName`, or `--account $accountName` to target the account. With `restore` / `revoke`, `--account` runs the command for every character of that account that has logged items.
+
+### Tickets
+
+- `.carboncopy help` - list every command.
+- `.carboncopy tickets lookup $characterName` - the account's balance on this realm.
+- `.carboncopy tickets add $characterName $amount` - add tickets (0-1000, the total can't pass 1000).
+- `.carboncopy tickets remove $characterName $amount`
+- `.carboncopy tickets move --account $accountName $toRealms` - give the balance this account uses here a new realm list.
+  - Example: `.carboncopy tickets move --account Ryan "1 2"` makes the balance valid on realms 1 and 2.
+  - If the account already has a balance for realms in the new list, it is added in and that row is removed.
+- `.carboncopy tickets move $fromRealms $toRealms` - the same for every balance whose list is exactly `$fromRealms`.
+  - Example: `.carboncopy tickets move 1 -1` makes all realm 1 balances valid everywhere.
+- `.addcctickets $characterName $amount` - kept for compatibility.
+- `CCACCOUNTTICKETS $accountName $amount` - console / [SOAP](https://www.azerothcore.org/wiki/remote-access#soap), used by [acore-cms](https://github.com/azerothcore/acore-cms).
+  - It replies nothing when the tickets were added. Any reply means they were not added (amount refused, account not found).
+
+### Restore and revoke
+
+Every item a copy mails is logged with its enchants, gems and suffix (`enableMailItemLog`). The mails stay `mailExpireDays` (default: the core's 30 days, `0` = never). Expired copy mail is deleted, not returned. The log is kept `mailItemLogRetentionDays`: by default as long as the mails stay, so restore / revoke work until the mail expires.
+
+- `.carboncopy restore $characterName` - list the logged items and where each one is now (mailbox, bags, bank, missing).
+- `.carboncopy restore $characterName missing [copyId] [--kick] [--clear]` - re-send only the items that no longer exist.
+- `.carboncopy restore $characterName all [copyId] [--kick] [--clear]` - re-send every logged item.
+- `.carboncopy revoke $characterName` - preview what a revoke would take back.
+- `.carboncopy revoke $characterName all [copyId] [--kick] [--clear]` - take back every logged item still unclaimed in the mailbox.
+- `.carboncopy revoke $characterName #logId [--kick] [--clear]` - take back one item (`#logId` from the list).
+- `.carboncopy cleanup $days` - delete mail log entries that are `$days` days old or older. `mailItemLogRetentionDays` does it automatically (at startup and once a day).
+
+Options:
+- `--kick`: the character must be offline. `--kick` kicks it, waits until it is saved, then runs.
+- `--clear` on restore: deletes the log entries once done.
+- `--clear` on revoke: deletes the entries instead of marking them revoked.
+
+### Config and logs
+
+- `.carboncopy config` (or `settings`) - show every active setting.
+- `.carboncopy logs` - the player log, newest first, 20 rows.
+- `.carboncopy logs --source name|guid --target name|guid --day YYYY-MM-DD --code N --limit N --oldest` - filtered.
+  - `--code`: `0` = starter tickets, `1` = success, `2` = failed.
+  - `--limit`: 1-100.
+  - `.carboncopy logs help` lists the flags.
+
+The admin log table records GM and console actions with codes `3` add, `4` remove, `5` lookup, `6` restore, `7` revoke, `8` cleanup and `9` move.
 
 ## Configuration
 
+Everything is in `CarbonCopy_Config.lua`, with a comment on each setting. Unlike the original script, by default the new character's talents are reset, it starts and is bound in its faction's capital, and empty slots get no filler item. For the original behaviour set `resetTalentsAfterCopy`, `teleportToCapital` and `homebindToCapital` to `false` and `emptySlotFiller = 38`.
+
+When a setting is invalid, CarbonCopy refuses to load and prints every problem as `ASSERT FAILED - ERROR in CarbonCopy_Config.lua`. With `shutdownOnConfigError = true` (default) it also shuts the worldserver down after 10 seconds, with exit code 1 and the reason `mod-ale lua_scripts/Acore_CarbonCopy/CarbonCopy.lua ASSERT`.
+
+| Setting | Default | |
+|---|---|---|
+| `shutdownOnConfigError` | `true` | Shut the server down when the config is invalid. |
+| `customDbName` | `ac_eluna` | Database for the CarbonCopy tables. |
+| `carboncopyTableName`, `playerLogsTableName`, `adminLogsTableName`, `mailItemsTableName` | `carboncopy`, ... | Table names. |
+| `enablePlayerLogs`, `enableAdminLogs`, `enableMailItemLog` | `true` | Logging. |
+| `mailItemLogRetentionDays` | `-1` | Delete mail log entries after this many days (-1 = as long as the mails stay, see `mailExpireDays`; 0 = never). |
+| `mailItemLogRetentionDaysFallback` | `0` | Used (with a warning at startup) when `mailItemLogRetentionDays` isn't valid. Same values. |
+| `minGMRankForCopy` / `minGMRankForTickets` / `minGMRankForRestore` | `0` / `2` / `2` | Ranks. |
+| `ticketRealms` | `"1"` | Realm list of new balances (see Tickets). |
+| `freeTickets` | `4` | Starter tickets per account. |
+| `ticketCost` | `"level"` | `"single"` or `"level"`. |
+| `maxLevel` | `79` | Highest level that can be copied. |
+| `ticket_Cost[...]` | 1 / 2 / 3 / 25 | Cost per level bracket. |
+| `cc_maps[...]` | 0, 1, 530, 571 | Maps the copy can start on. |
+| `keepStartingItems` | `false` | Keep the new character's own items (false = all but the Hearthstone are deleted). |
+| `copyEquipmentSets` | `false` | Copy Equipment Manager sets. |
+| `makeCopySoulbounded` | `true` | Copies and restores get the soulbound flag (false = keep the original flags). |
+| `resetTalentsAfterCopy` | `true` | Reset talents at first login. |
+| `teleportToCapital` / `homebindToCapital` | `true` | Start / bind in the faction's capital (`capitalPositions`, `allianceRaces`, `hordeRaces`). |
+| `mailExpireDays` | `-1` | Days the mails stay (-1 = core default, 0 = never). |
+| `mailSignature` | `the team of ChromieCraft!` | Signature of the mails. Their texts, in all languages, are in `CarbonCopy_Locale.lua`. |
+| `emptySlotFiller` | `0` | Item sent for empty slots so every mail is full (0 = off, 38 = Recruit's Shirt like the original script). |
+| `doneMessageDelay` | `5` | Seconds before the "copy complete" message. |
+| `pollIntervalMs` / `pollMaxAttempts` | `250` / `60` | How often and how long to wait for logouts and mail saves. |
+
+## Languages
+
+All texts that players and GMs see are in `CarbonCopy_Locale.lua`, in the 9 client languages (enUS, koKR, frFR, deDE, zhCN, zhTW, esES, esMX, ruRU). The command syntax and the logs viewer are English only.
+
+## Tables
+
+- `carboncopy` - ticket balances.
+  - Columns: `account_id`, `tickets`, `allow_copy_from_id` (reserved), `starter_tickets_given`, `realm_ids`.
+  - The key is `account_id` + `realm_ids`.
+- `carboncopy_charges` - ticket deductions in progress, normally empty.
+- `carboncopy_player_logs` and `carboncopy_admin_logs`.
+- `carboncopy_mail_items` - the mailed-item log used by restore and revoke.
+
+Example: give every existing balance one extra ticket:
+
+```sql
+UPDATE ac_eluna.carboncopy SET tickets = LEAST(tickets + 1, 1000);
 ```
-customDbName = "ac_eluna" -- Name of the database schema used for CarbonCopy data.
-carboncopyTableName = "carboncopy" -- Main ticket table name.
-playerLogsTableName = "carboncopy_player_logs" -- Player logs table name.
-adminLogsTableName = "carboncopy_admin_logs" -- Admin logs table name.
-enablePlayerLogs = true -- Enable inserts into player logs table.
-enableAdminLogs = true -- Enable inserts into admin logs table.
-minGMRankForCopy = 0 -- Minimum GM rank required to use .carboncopy.
-minGMRankForTickets = 2 -- Minimum GM rank required to add or remove tickets.
-freeTickets = 4 -- Tickets granted when an account uses CarbonCopy for the first time.
-mailText = ",\n \n here you are your gear. Have fun with the new twink!\n \n- Sincerely,\n the team of ChromieCraft!" -- Text included in the item mail.
-maxLevel = 79 -- Maximum source character level allowed for copying.
-ticketCost = "level" -- "single" = always 1 ticket, "level" = use ticket_Cost table.
-keepStartingItems = false -- true = keep target character's existing gear/items, false = delete all except Hearthstone before sending copied gear.
-copyEquipmentSets = false -- true = copy Equipment Manager sets with remapped item GUIDs.
 
-ticket_Cost[19] = 1 -- Cost to copy characters up to level 19.
-ticket_Cost[29] = 1 -- Cost to copy characters up to level 29.
-ticket_Cost[39] = 1 -- Cost to copy characters up to level 39.
-ticket_Cost[49] = 1 -- Cost to copy characters up to level 49.
-ticket_Cost[59] = 2 -- Cost to copy characters up to level 59.
-ticket_Cost[69] = 2 -- Cost to copy characters up to level 69.
-ticket_Cost[79] = 3 -- Cost to copy characters up to level 79.
-ticket_Cost[80] = 25 -- Cost to copy level 80 characters.
--- This can be scable to any level up or down, if scale up make sure maxLevel also gets updated.
-
-cc_maps[1] = 0 -- Eastern Kingdoms
-cc_maps[2] = 1 -- Kalimdor
-cc_maps[3] = 530 -- Outland
-cc_maps[4] = 571 -- Northrend
--- This allows custom maps if any are used.
-```
-
-Set the conf flags in the top section of the .lua file.
-
-You need to grant account related tickets in the `carboncopy` table:
-- `account_id` is the unique account ID.
-- `tickets` is the number of times an account can copy a character.
-- `allow_copy_from_id` is reserved for future use.
-
-If `enablePlayerLogs` is true, player copy attempts are recorded in `playerLogsTableName`.
-If `enableAdminLogs` is true, GM/console ticket actions are recorded in `adminLogsTableName`.
-
-You can also grant tickets from console or SOAP:
-- `CCACCOUNTTICKETS accountName amount`
-
-You can grant or remove tickets in game (default restriction: GM rank 2+):
-- `.carboncopy tickets add characterName amount`
-- `.carboncopy tickets remove characterName amount`
-- `.addcctickets characterName amount` (kept for legacy compatibility)
-
-**Most important setting: `ticketCost`**
-- If set to `single`, every copy costs 1 ticket.
-- If set to `level`, ticket cost is determined by the `ticket_Cost[...]` brackets.
-
-**Optional settings**
-- `keepStartingItems`: When `true`, the target character keeps existing starter/equipped items. When `false`, all target items except Hearthstone are deleted before copied gear is mailed.
-- `copyEquipmentSets`: When `true`, Equipment Manager sets are copied and remapped to the new mailed item GUIDs. This requires the in-game "Use Equipment Manager" feature to be enabled. **Design note:** Only currently equipped items are included in equipment set copying to minimize server queries and load. This means equipment sets will only contain properly remapped items for gear that was actively equipped. Any set slots that referenced non-equipped items will show as empty (0) in the copied set.
-
-## Copy Workflow
-
-
-- Create a new character with same class/race as the one to copy in the same account. Do NOT log it in.
-- Log in with the source character
-- While logged in on the character to copy from, do `.carboncopy $newToonsName`
-- **WAIT** for a minute before you log out.
-- Log on the new character, find a mailbox. Possibly the items in the mail show no enchants/gems. Once you take the items out of the mailbox, all modifications will be visible. On latest AC modifications are visible in the mailbox already.
-
-## What it does:
-- Deletes the new character's starter gear, except the Hearthstone.
-- Sends copies of all equipped items to the new character by mail, including gems and enchants.
-- Copies homebind (inn/hearth location) to the new character.
-- Copies level, XP, discovered flight masters, played time, stats, explored zones, and homebind.
-- For Hunters, copies the **oldest** pet and bought stable slots (pet talent points are refunded).
-- For Shamans, copies low level totems if the source character still has them.
-- Copies completed quests, reputation, talents, glyphs, spells, and character skills (including professions).
-- Places actions on the new character's bars.
-- Optionally copies Equipment Manager sets when `copyEquipmentSets = true`.
-- If you copy macro data from one character's `/wtf/` folder to the other, macro setup is usually not needed.
-
-## What it **NOT** does:
-- Does not copy bag or bank items.
-- Does not copy bag containers.
-- Does not copy gold; the new character starts at 0 copper.
-- Does not copy achievements.
-
-Example query to add one free ticket to all existing accounts:
-
-`REPLACE INTO ac_eluna.carboncopy(account_id) SELECT id FROM acore_auth.account;`
-`UPDATE  ac_eluna.carboncopy SET tickets = 1;`
+Prefer the commands for single accounts. If you insert rows by hand, give each account at most one row per realm (e.g. not both `1` and `1 2`). CarbonCopy warns about such accounts in the server log at startup.
 
 Find me on patreon: https://www.patreon.com/Honeys
